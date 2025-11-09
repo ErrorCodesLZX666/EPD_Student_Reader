@@ -211,6 +211,17 @@ void UI_DrawReaderPage(const char *heading, const char *progress_text, const cha
     u16 cur_y = text_y;
     const u16 line_height = FONT_SIZE_16 + 4; /* 行高可调整 */
     char linebuf[256];
+    // 判断当前第一个字符是否是被偏移的GBK
+    if (*p)
+    {
+        if (*p <= 0xFE && *(p + 1) >= 0x81)
+        {
+            // 这里这个代表是异常偏移错误的，第一个字节是半个字符的
+            p++;
+            LOGD("First byte is GBK half error, tring to skip it...\n");
+        }
+    }
+
     while (*p && (cur_y + line_height <= SCREEN_W - 10))
     {
         /* 逐字符累加直到超出文本区域宽度 */
@@ -476,6 +487,18 @@ uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
     const u16 line_height = font_size + 4;
     char linebuf[256];
 
+    uint8_t flag_first_bytes_is_gbk_error = 0;
+    // 判断当前第一个字符是否是被偏移的GBK
+    // if (*p)
+    // {
+    //     if (*p <= 0xFE)
+    //     {
+    //         // 这里这个代表是异常偏移错误的，第一个字节是半个字符的
+    //         p++;
+    //         flag_first_bytes_is_gbk_error = 1;
+    //     }
+    // }
+
     while (*p && (cur_y + line_height <= SCREEN_W - 10))
     {
         const char *start = p;
@@ -519,11 +542,11 @@ uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
         cur_y += line_height;
         page_end = p;
     }
-    #if SHOW_NEXT_TEXT
-    LOGD("显示余文本 =%s",page_end);
-    #endif
+#if SHOW_NEXT_TEXT
+    LOGD("显示余文本 =%s", page_end);
+#endif
     // LOGD("显示余文本 =%s",page_end);
-    return (uint32_t)(page_end - content);
+    return (uint32_t)(page_end - content) ;
 }
 // uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
 // {

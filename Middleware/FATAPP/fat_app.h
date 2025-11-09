@@ -76,7 +76,6 @@ typedef struct {
     uint32_t total_pages;
     uint32_t current_page;
     uint32_t current_bytes;
-    uint16_t *page_bytes_map;
 } NovelIndex;
 int save_novel_index(const char *path, NovelIndex *index);
 int load_novel_index(const char *path, NovelIndex *index);

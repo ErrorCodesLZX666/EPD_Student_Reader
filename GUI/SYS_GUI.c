@@ -118,15 +118,15 @@ void UI_Content_Page_up_action(void)
     snprintf(indexPath, sizeof(indexPath), "0:/Index/%s.idx", novelText);
     snprintf(novelPath, sizeof(novelPath), "0:/%s", novelText);
     // load_novel_index(indexPath, &novelIndex);
-    if ( novelIndex.current_bytes - current_page_content_bytes - 512  > 0)
+    if (novelIndex.current_page > 1)
     {
         save_novel_index(indexPath, &novelIndex);
         // ÷¥––∑≠“≥≤Ÿ◊˜¬ﬂº≠
-        sd_read_range(novelPath, , novelIndex.current_bytes, (char *)novelContent, novelIndex.current_bytes - 512 > 0 ?  512 : novelIndex.current_bytes , &current_page_content_bytes);
+        
+        sd_read_range(novelPath,novelIndex.current_bytes - current_page_content_bytes > 512 ? novelIndex.current_bytes - current_page_content_bytes - 512 : novelIndex.current_bytes - current_page_content_bytes  , novelIndex.current_bytes - current_page_content_bytes, (char *)novelContent, novelIndex.current_bytes - 512 > 0 ? 512 : novelIndex.current_bytes, &current_page_content_bytes);
         // safe_read_page(novelPath,index.current_bytes - 512 > 0 ? index.current_bytes - 512 : 0, (char *)novelContent, 512, &current_page_content_bytes);
         UI_DrawReaderPage(novelText, novelProgress, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
         UI_PartShow();
-
         LOGD("Page read offset: %lu bytes\r\n", novelIndex.current_bytes);
         LOGD("First few bytes: %02X %02X %02X %02X %02X\r\n",
              (unsigned char)novelContent[0], (unsigned char)novelContent[1],
@@ -152,7 +152,7 @@ void UI_Content_Page_down_action(void)
     snprintf(novelPath, sizeof(novelPath), "0:/%s", novelText);
     // load_novel_index(indexPath, &novelIndex);
     // ≈–∂œ «∑Ò“—æ≠‘ΩΩÁ
-    if (novelIndex.current_bytes <= novelIndex.total_bytes)
+    if (novelIndex.current_page < novelIndex.total_pages)
     {
         save_novel_index(indexPath, &novelIndex);
         // ÷¥––∑≠“≥≤Ÿ◊˜¬ﬂº≠

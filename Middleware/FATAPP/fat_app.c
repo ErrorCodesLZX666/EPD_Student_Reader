@@ -494,7 +494,7 @@ FRESULT Novel_CalcIndex(const char *path, uint8_t font_size, NovelIndex *index)
         // 计算当前页能显示多少个字符
         uint16_t used_bytes = UI_CalcReaderPageBytes(read_buf, font_size);
         // 初始化当前map的内存区域,并且填充对于的值
-        index->page_bytes_map[calculated_pages] = mymalloc(SRAMIN, sizeof(uint16_t));
+        //index->page_bytes_map[calculated_pages] = mymalloc(SRAMIN, sizeof(uint16_t));
         if (used_bytes == 0) {
             // 理论上不可能为0，防止死循环  
             LOGE("分页异常，used_chars=0 在 offset=%lu\r\n", (unsigned long)offset);
