@@ -487,7 +487,7 @@ uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
     const u16 line_height = font_size + 4;
     char linebuf[256];
 
-    uint8_t flag_first_bytes_is_gbk_error = 0;
+    
     // 判断当前第一个字符是否是被偏移的GBK
     // if (*p)
     // {

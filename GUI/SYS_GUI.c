@@ -220,7 +220,7 @@ void UI_Refresh(void)
             {
                 // 索引文件不存在，重新计算索引
                 NovelIndex index = {};
-                if (Novel_CalcIndex(novelPath, FONT_SIZE_16, &index) == FR_OK)
+                if (Novel_CalcIndex(novelPath,indexPath, FONT_SIZE_16, &index) == FR_OK)
                 {
                     index.current_bytes = 0;
                     index.current_page = 0;

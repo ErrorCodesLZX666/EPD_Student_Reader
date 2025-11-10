@@ -66,9 +66,9 @@ u8 getDiskInfo(DiskInfo_t* flash_disk,DiskInfo_t* sd_disk);
 void sd_read_dir_txt(const char* path, char ***text, int *count);
 
 //=======================================
-// 读取一个文件的部分内容
+// 读写一个文件的部分内容
 FRESULT sd_read_range(const char *path, FSIZE_t start, FSIZE_t end, char *buff, UINT buff_size, UINT *bytes_read);
-
+FRESULT sd_write_range(const char *path, FSIZE_t start, const char *data, UINT data_size, UINT *bytes_written);
 //=======================================
 // 加载保存某一本图书的索引文件
 typedef struct {
@@ -81,6 +81,6 @@ int save_novel_index(const char *path, NovelIndex *index);
 int load_novel_index(const char *path, NovelIndex *index);
 //=======================================
 // 计算某一个小说的文件索引
-FRESULT Novel_CalcIndex(const char *path, uint8_t font_size, NovelIndex *index);
+FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_size, NovelIndex *index);
 
 #endif // _FAT_APP_H

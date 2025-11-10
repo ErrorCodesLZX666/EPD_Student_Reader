@@ -385,7 +385,106 @@ FRESULT sd_read_range(const char *path, FSIZE_t start, FSIZE_t end, char *buff, 
     return res;
 }
 
+/**
+ * @brief 向文件指定范围写入数据
+ * @param path        文件路径，如 "0:/novel.txt"
+ * @param start       起始写入偏移（从 0 开始）
+ * @param data        要写入的数据指针
+ * @param data_size   要写入的数据长度（字节数）
+ * @param bytes_written 返回实际写入的字节数
+ * @retval FRESULT    FatFs 状态码（FR_OK 表示成功）
+ */
+FRESULT sd_write_range(const char *path, FSIZE_t start, const char *data, UINT data_size, UINT *bytes_written)
+{
+    FIL file;
+    FRESULT res;
+    UINT bw = 0;
+    FSIZE_t file_size;
 
+    *bytes_written = 0;
+
+    // 打开文件（读写模式，不创建新文件）
+    res = f_open(&file, path, FA_WRITE | FA_READ);
+    if (res == FR_NO_FILE)
+        res = f_open(&file, path, FA_CREATE_NEW | FA_WRITE | FA_READ);
+
+    if (res != FR_OK)
+    {
+        LOGE("File open failed: %d\r\n", res);
+        return res;
+    }
+
+    file_size = f_size(&file);
+
+    // 参数检查
+    if (start > file_size)
+    {
+        // 计算需要填充的字节数
+        FSIZE_t padding = start - file_size;
+        LOGW("Start offset beyond EOF, padding %lu bytes with zeros\r\n", (unsigned long)padding);
+
+        // 移动到文件末尾
+        res = f_lseek(&file, file_size);
+        if (res != FR_OK)
+        {
+            LOGE("f_lseek failed: %d\r\n", res);
+            f_close(&file);
+            return res;
+        }
+
+        // 准备一个零缓冲区，分段填充，防止大文件写入溢出
+        static uint8_t zero_buf[256] = {0};
+        while (padding > 0)
+        {
+            UINT chunk = (padding > sizeof(zero_buf)) ? sizeof(zero_buf) : padding;
+            UINT bw_tmp = 0;
+            res = f_write(&file, zero_buf, chunk, &bw_tmp);
+            if (res != FR_OK)
+            {
+                LOGE("Zero fill write failed: %d\r\n", res);
+                f_close(&file);
+                return res;
+            }
+            padding -= bw_tmp;
+        }
+    }
+    if (data == NULL || data_size == 0)
+    {
+        LOGE("Invalid data or length , current data_size = %u\r\n", data_size);
+        f_close(&file);
+        return FR_INVALID_PARAMETER;
+    }
+
+    // 移动文件指针到 start 位置
+    res = f_lseek(&file, start);
+    if (res != FR_OK)
+    {
+        LOGE("f_lseek failed: %d\r\n", res);
+        f_close(&file);
+        return res;
+    }
+
+    // 写入数据
+    res = f_write(&file, data, data_size, &bw);
+    if (res != FR_OK)
+    {
+        LOGE("f_write failed: %d\r\n", res);
+        f_close(&file);
+        return res;
+    }
+
+    *bytes_written = bw;
+
+    // 如果写入后文件变大，同步到磁盘
+    res = f_sync(&file);
+    if (res != FR_OK)
+    {
+        LOGE("f_sync failed: %d\r\n", res);
+    }
+
+    f_close(&file);
+    return res;
+}
 
 // 写入小说索引
 int save_novel_index(const char *path, NovelIndex *index)
@@ -393,17 +492,22 @@ int save_novel_index(const char *path, NovelIndex *index)
     FIL file;
     FRESULT res;
 
-    res = f_open(&file, path, FA_CREATE_ALWAYS | FA_WRITE);
-    if (res != FR_OK) {
-        LOGE("Open file failed: %s (%d)\r\n", path, res);
-        return -1;
+    res = f_open(&file, path, FA_WRITE);
+    if (res == FR_NO_FILE)
+    {
+        res = f_open(&file, path, FA_CREATE_NEW | FA_WRITE | FA_READ);
+    } else if (res != FR_OK)
+    {
+        LOGE("File open failed: %d\r\n", res);
+        return res;
     }
     LOGI("Open index file successfull : %s\r\n", path);
 
     UINT bw;
     res = f_write(&file, index, sizeof(NovelIndex), &bw);
     LOGI("write finished.\r\n");
-    if (res != FR_OK || bw != sizeof(NovelIndex)) {
+    if (res != FR_OK || bw != sizeof(NovelIndex))
+    {
         LOGE("Write index failed: %s\r\n", path);
         f_close(&file);
         return -2;
@@ -423,7 +527,8 @@ int load_novel_index(const char *path, NovelIndex *index)
     UINT br;
 
     res = f_open(&file, path, FA_READ);
-    if (res != FR_OK) {
+    if (res != FR_OK)
+    {
         LOGE("Index file is not found: %s\r\n", path);
         memset(index, 0, sizeof(NovelIndex));
         return -1; // 未找到文件
@@ -432,7 +537,8 @@ int load_novel_index(const char *path, NovelIndex *index)
     res = f_read(&file, index, sizeof(NovelIndex), &br);
     f_close(&file);
 
-    if (res != FR_OK || br != sizeof(NovelIndex)) {
+    if (res != FR_OK || br != sizeof(NovelIndex))
+    {
         LOGE("Read index file failed: %s\r\n", path);
         memset(index, 0, sizeof(NovelIndex));
         return -2;
@@ -441,16 +547,15 @@ int load_novel_index(const char *path, NovelIndex *index)
     return 0; // 成功
 }
 
-
-
 /**
  * @brief  计算整本小说的页数（基于 UI_CalcReaderPageChars）
  * @param  path        小说文件路径，如 "0:/novel.txt"
+ * @param  indexPath   索引文件路径，如 "0:/Index/novel.idx"
  * @param  font_size   字体大小
  * @param  index       输出索引信息结构体（会被写入 total_bytes / total_pages）
  * @retval FRESULT     FatFs 结果码（FR_OK 表示成功）
  */
-FRESULT Novel_CalcIndex(const char *path, uint8_t font_size, NovelIndex *index)
+FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_size, NovelIndex *index)
 {
     FIL file;
     FRESULT res;
@@ -463,7 +568,8 @@ FRESULT Novel_CalcIndex(const char *path, uint8_t font_size, NovelIndex *index)
 
     // 打开文件
     res = f_open(&file, path, FA_READ);
-    if (res != FR_OK) {
+    if (res != FR_OK)
+    {
         LOGE("Open File failed: %s (%d)\r\n", path, res);
         return res;
     }
@@ -478,34 +584,65 @@ FRESULT Novel_CalcIndex(const char *path, uint8_t font_size, NovelIndex *index)
 
     // 定义计算了好多页
     uint32_t calculated_pages = 0;
+// 定义一个缓存分页字节数
+#define MAX_CACHED_PAGES 512
+    uint16_t page_bytes_buff[MAX_CACHED_PAGES] = {0};
+    uint16_t page_trunk_start_offset = 0;
 
     // 主循环：遍历整个文件
-    while (offset < file_size) {
+    while (offset < file_size)
+    {
         // 每次读取一段数据
         FSIZE_t end = offset + sizeof(read_buf);
-        if (end > file_size) end = file_size;
-
+        if (end > file_size)
+            end = file_size;
         res = sd_read_range(path, offset, end, read_buf, sizeof(read_buf), &bytes_read);
-        if (res != FR_OK || bytes_read == 0) {
+        if (res != FR_OK || bytes_read == 0)
+        {
             LOGE("读取出错或结束: offset=%lu res=%d\r\n", (unsigned long)offset, res);
             break;
         }
 
         // 计算当前页能显示多少个字符
         uint16_t used_bytes = UI_CalcReaderPageBytes(read_buf, font_size);
+        page_bytes_buff[calculated_pages - page_trunk_start_offset] = used_bytes;
+        // 判断当前分区值是否已经是满的
+        if (calculated_pages % MAX_CACHED_PAGES == 0)
+        {
+            // 代表是满的，需要把之前的缓存写入到 文件中
+            sd_write_range(indexPath, sizeof(NovelIndex) + (page_trunk_start_offset * sizeof(uint16_t)),
+                           (const char *)&page_bytes_buff[0], (calculated_pages - page_trunk_start_offset) * sizeof(uint16_t), &bytes_read);
+            // 将这次的trunk_start_offset更新为当前的calculated_pages
+            page_trunk_start_offset = calculated_pages;
+            // 使用memset清空缓存
+            memset(page_bytes_buff, 0, sizeof(page_bytes_buff));
+        }
+        // 累加计数器
+        calculated_pages++;
         // 初始化当前map的内存区域,并且填充对于的值
-        //index->page_bytes_map[calculated_pages] = mymalloc(SRAMIN, sizeof(uint16_t));
-        if (used_bytes == 0) {
-            // 理论上不可能为0，防止死循环  
+        // index->page_bytes_map[calculated_pages] = mymalloc(SRAMIN, sizeof(uint16_t));
+        if (used_bytes == 0)
+        {
+            // 理论上不可能为0，防止死循环
             LOGE("分页异常，used_chars=0 在 offset=%lu\r\n", (unsigned long)offset);
+            offset++;
             break;
         }
 
         offset += used_bytes;
         total_pages++;
-        calculated_pages++;
         // 防止最后一页没有读完的尾页被跳过
-        if (offset >= file_size) break;
+        if (offset >= file_size)
+            break;
+    }
+
+    // 写入剩余未写入的分页数据
+    if (calculated_pages > page_trunk_start_offset)
+    {
+        sd_write_range(indexPath, sizeof(NovelIndex) + (page_trunk_start_offset * sizeof(uint16_t)),
+                       (const char *)&page_bytes_buff[0],
+                       (calculated_pages - page_trunk_start_offset) * sizeof(uint16_t),
+                       &bytes_read);
     }
 
     f_close(&file);
