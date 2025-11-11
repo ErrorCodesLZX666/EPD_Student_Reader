@@ -303,14 +303,10 @@ void UI_Refresh(void)
             LOGI("Trying to read first page content...\r\n");
             sd_read_range(novelPath, novelIndex.current_bytes, novelIndex.current_bytes + 512, (char *)novelContent, 512, &current_page_content_bytes);
             uint8_t novelProgressText[32];
-            LOGI("2222");
             snprintf((char *)novelProgressText, sizeof(novelProgressText), "第 %lu / %lu 页", (unsigned long)(novelIndex.current_page), (unsigned long)novelIndex.total_pages);
             UI_DrawReaderPage(novelfileName, novelProgressText, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
-            LOGI("3333");
             UI_PartShow();
-            LOGI("!!!!");
             current_page_content_bytes = UI_CalcReaderPageBytes(novelContent, FONT_SIZE_16);
-            LOGI("4444");
             // novelIndex.current_bytes += current_page_content_bytes;
             myfree(SRAMIN, novelContent);
         }
@@ -344,5 +340,5 @@ void SYSGUI_Entries(void)
     // 调用部分显示初始化函数
     EPD_GPIOInit();
     UI_PartShowInit();
-    xTaskCreate(vTask_GUI, "GUI_Task", 512, NULL, 2, NULL);
+    xTaskCreate(vTask_GUI, "GUI_Task", 2048, NULL, 2, NULL);
 }

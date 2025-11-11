@@ -236,7 +236,7 @@ void task_font_config()
     // 初始化项目级别的GUI
     GUI_key_config();
     SYSGUI_Entries(); // 启动GUI任务
-    xTaskCreate(Key_Task, "Key_Task", 256, NULL, 3, NULL);
+    xTaskCreate(Key_Task, "Key_Task", 2048, NULL, 3, NULL);
 
 
     // 下方代码是用来测试小说显示的

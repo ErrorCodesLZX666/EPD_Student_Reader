@@ -4,7 +4,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#define delay_ms(_ms) vTaskDelay(pdMS_TO_TICKS(_ms))
 
 
 u8 oldImage[12480];
@@ -26,9 +25,7 @@ void EPD_READBUSY(void)
 *******************************************************************/
 void EPD_HW_RESET(void)
 {
-	LOGD("ddd\r\n");
 	delay_ms(100);
-	LOGD("666\r\n");
 	EPD_RES_Clr();
 	delay_ms(20);
 	EPD_RES_Set();
@@ -85,7 +82,7 @@ void EPD_FastInit(void)
 /*******************************************************************
 		函数说明:休眠函数
 		入口参数:无
-		说明:屏幕进入低功耗模式		
+		说明:屏幕进入低功耗模式		、
 *******************************************************************/
 void EPD_DeepSleep(void)
 {
