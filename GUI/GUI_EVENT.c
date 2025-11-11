@@ -6,48 +6,58 @@
 
 QueueHandle_t guiEventQueue;
 
+uint8_t busy_now = 0;
 void GUI_HandleEvent(const GUI_Event_t *event)
 {
-    LOGD("GUI_HandleEvent: event type = %d", event->type);
-    if (event->type != GUI_EVENT_KEY)
-        return;
-    switch (uiStatus)
+    if (!busy_now)
     {
-    case UI_STATE_LOCK:
-        if (event->key == KEY_HOME)
-            UI_SwitchTo(UI_STATE_LIST);
-        break;
-    case UI_STATE_LIST:
-        if (event->key == KEY_UP)
+        busy_now = 1;
+        LOGD("GUI_HandleEvent: event type = %d", event->type);
+        if (event->type != GUI_EVENT_KEY)
+            return;
+        switch (uiStatus)
         {
-            // 向上选择小说
-            UI_List_Page_up_action();
+        case UI_STATE_LOCK:
+            if (event->key == KEY_HOME)
+                UI_SwitchTo(UI_STATE_LIST);
+            break;
+        case UI_STATE_LIST:
+            if (event->key == KEY_UP)
+            {
+                // 向上选择小说
+                UI_List_Page_up_action();
+            }
+            else if (event->key == KEY_DOWN)
+            {
+                // 向下选择小说
+                UI_List_Page_down_action();
+            }
+            else if (event->key == KEY_OK)
+            {
+                // 载入小说阅读界面
+                UI_SwitchTo(UI_STATE_READER);
+            }
+            break;
+        case UI_STATE_READER:
+            if (event->key == KEY_UP)
+                UI_Content_Page_up_action(); // 小说上一页
+            else if (event->key == KEY_DOWN)
+                UI_Content_Page_down_action(); // 小说下一页
+            else if (event->key == KEY_HOME)
+                UI_SwitchTo(UI_STATE_LOCK);
+            else if (event->key == KEY_OK)
+                UI_SwitchTo(UI_STATE_READER);
+            else if (event->key == KEY_HOME)
+                UI_SwitchTo(UI_STATE_LOCK);
+            break;
+        default:
+            break;
         }
-        else if (event->key == KEY_DOWN)
-        {
-            // 向下选择小说
-            UI_List_Page_down_action();
-        }
-        else if (event->key == KEY_OK)
-        {
-            // 载入小说阅读界面
-            UI_SwitchTo(UI_STATE_READER);
-        }
-        break;
-    case UI_STATE_READER:
-        if (event->key == KEY_UP)
-            UI_Content_Page_up_action();    // 小说上一页
-        else if (event->key == KEY_DOWN)
-            UI_Content_Page_down_action();  // 小说下一页
-        else if (event->key == KEY_HOME)
-            UI_SwitchTo(UI_STATE_LOCK);
-        else if (event->key == KEY_OK)
-            UI_SwitchTo(UI_STATE_READER);
-        else if (event->key == KEY_HOME)
-            UI_SwitchTo(UI_STATE_LOCK);
-        break;
-    default:
-        break;
+        busy_now = 0;
+    }
+    else
+    {
+        LOGD("GUI is busy now, event ignored.");
     }
 }
 

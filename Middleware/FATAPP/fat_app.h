@@ -80,6 +80,9 @@ typedef struct {
 int save_novel_index(const char *path, NovelIndex *index);
 int load_novel_index(const char *path, NovelIndex *index);
 //=======================================
+// 加载某一页的小说需要显示多少个bytes
+uint32_t novel_read_page_bytes(const char *indexPath, uint32_t page_number);
+//=======================================
 // 计算某一个小说的文件索引
 FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_size, NovelIndex *index);
 

@@ -309,8 +309,7 @@ int main(void)
     xTaskCreate(task_entries, "task_entries", 1024 * 10, NULL, 1, &hTask_entries);
     // 开启任务调度功能
     vTaskStartScheduler();
-    while (1)
-        ;
+    while (1);
 }
 
 void usart0_on_recive(uint8_t *datas, uint8_t len)

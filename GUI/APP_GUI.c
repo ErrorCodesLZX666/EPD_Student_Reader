@@ -211,16 +211,6 @@ void UI_DrawReaderPage(const char *heading, const char *progress_text, const cha
     u16 cur_y = text_y;
     const u16 line_height = FONT_SIZE_16 + 4; /* 行高可调整 */
     char linebuf[256];
-    // 判断当前第一个字符是否是被偏移的GBK
-    if (*p)
-    {
-        if (*p <= 0xFE && *(p + 1) >= 0x81)
-        {
-            // 这里这个代表是异常偏移错误的，第一个字节是半个字符的
-            p++;
-            LOGD("First byte is GBK half error, tring to skip it...\n");
-        }
-    }
 
     while (*p && (cur_y + line_height <= SCREEN_W - 10))
     {
@@ -487,7 +477,6 @@ uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
     const u16 line_height = font_size + 4;
     char linebuf[256];
 
-    
     // 判断当前第一个字符是否是被偏移的GBK
     // if (*p)
     // {
@@ -546,7 +535,7 @@ uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
     LOGD("显示余文本 =%s", page_end);
 #endif
     // LOGD("显示余文本 =%s",page_end);
-    return (uint32_t)(page_end - content) ;
+    return (uint32_t)(page_end - content);
 }
 // uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
 // {
@@ -750,4 +739,39 @@ void UI_DrawErrorScreen(const char *error_msg)
 
     // 打印提示
     DrawCenteredString(SCREEN_H - 30, "Please contact support, try restarting the device", FONT_SIZE_12, COLOR_BLACK);
+}
+
+void UI_DrawIndexLoadingScreen(uint32_t currentProgress, uint32_t totalProgress, uint8_t finish_flags)
+{
+    Paint_NewImage(g_image_buf, SCREEN_W, SCREEN_H, 0, COLOR_WHITE);
+    Paint_Clear(COLOR_WHITE);
+    EPD_DrawRectangle(0, 0, SCREEN_H - 1, SCREEN_W - 1, COLOR_BLACK, 0);
+
+    /* 错误图标（居中）*/
+    u16 icon_w = 80;
+    u16 icon_x = (SCREEN_H - icon_w) / 2;
+    u16 icon_y = 60;
+    // EPD_DrawRectangle(icon_x, icon_y, icon_x + icon_w, icon_y + icon_w, COLOR_BLACK, 0);
+    // 显示简笔画
+    DrawCenteredString(icon_y + 30, (char *)finish_flags ? ":)" : "#", FONT_SIZE_24, COLOR_BLACK);
+
+    if (finish_flags)
+    {
+        char progressPercentStr[32];
+        snprintf(progressPercentStr, sizeof(progressPercentStr), "计算完毕");
+        DrawCenteredString(icon_y + icon_w + 48, progressPercentStr, FONT_SIZE_12, COLOR_BLACK);
+        // 打印提示
+        DrawCenteredString(SCREEN_H - 30, "索引计算成功，请你重新设备！", FONT_SIZE_12, COLOR_BLACK);
+    }
+    else
+    {
+        DrawCenteredString(icon_y + icon_w + 24, "小说索引加载中 :", FONT_SIZE_16, COLOR_BLACK);
+        // 计算进度百分比
+        uint8_t progressPercent = currentProgress * 100 / totalProgress;
+        char progressPercentStr[32];
+        snprintf(progressPercentStr, sizeof(progressPercentStr), "已完成：%d%%", progressPercent);
+        DrawCenteredString(icon_y + icon_w + 48, progressPercentStr, FONT_SIZE_12, COLOR_BLACK);
+        // 打印提示
+        DrawCenteredString(SCREEN_H - 30, "第一次打开小说，建立索引中", FONT_SIZE_12, COLOR_BLACK);
+    }
 }

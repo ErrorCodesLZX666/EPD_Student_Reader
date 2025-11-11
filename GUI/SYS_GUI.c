@@ -118,29 +118,52 @@ void UI_Content_Page_up_action(void)
     snprintf(indexPath, sizeof(indexPath), "0:/Index/%s.idx", novelText);
     snprintf(novelPath, sizeof(novelPath), "0:/%s", novelText);
     // load_novel_index(indexPath, &novelIndex);
-    if (novelIndex.current_page > 1)
+    if (novelIndex.current_page > 0)
     {
-        save_novel_index(indexPath, &novelIndex);
-        // 执行翻页操作逻辑
-        
-        sd_read_range(novelPath,novelIndex.current_bytes - current_page_content_bytes > 512 ? novelIndex.current_bytes - current_page_content_bytes - 512 : novelIndex.current_bytes - current_page_content_bytes  , novelIndex.current_bytes - current_page_content_bytes, (char *)novelContent, novelIndex.current_bytes - 512 > 0 ? 512 : novelIndex.current_bytes, &current_page_content_bytes);
-        // safe_read_page(novelPath,index.current_bytes - 512 > 0 ? index.current_bytes - 512 : 0, (char *)novelContent, 512, &current_page_content_bytes);
-        UI_DrawReaderPage(novelText, novelProgress, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
-        UI_PartShow();
-        LOGD("Page read offset: %lu bytes\r\n", novelIndex.current_bytes);
+        // 最新代码只用读取索引文件对应的字节即可
+        // 定义本次读取的范围
+        uint32_t read_start_at = novelIndex.current_bytes - novel_read_page_bytes(indexPath, novelIndex.current_page - 1);
+        uint32_t read_end_at = novelIndex.current_bytes;
+        // 读取小说内容
+        sd_read_range(novelPath, read_start_at, read_end_at, (char *)novelContent, read_end_at - read_start_at, &current_page_content_bytes);
+        LOGD("=========================\r\n");
+        LOGD("Page read start offset: %lu bytes\r\n", read_start_at);
+        LOGD("Page read end offset: %lu bytes\r\n", read_end_at);
+        LOGD("Read bytes: %d bytes\r\n", current_page_content_bytes);
+        LOGD("page - 1 bytes from index: %d bytes\r\n", novel_read_page_bytes(indexPath, novelIndex.current_page - 1));
+        LOGD("page  bytes from index: %d bytes\r\n", novel_read_page_bytes(indexPath, novelIndex.current_page));
         LOGD("First few bytes: %02X %02X %02X %02X %02X\r\n",
              (unsigned char)novelContent[0], (unsigned char)novelContent[1],
              (unsigned char)novelContent[2], (unsigned char)novelContent[3],
              (unsigned char)novelContent[4]);
+        LOGD("=========================\r\n");
+        // 更新索引
+        novelIndex.current_bytes -= novel_read_page_bytes(indexPath, novelIndex.current_page - 1);
+        novelIndex.current_page--;
+        // 显示小说内容
+        uint8_t novelProgressText[32];
+        snprintf((char *)novelProgressText, sizeof(novelProgressText), "第 %lu / %lu 页", (unsigned long)(novelIndex.current_page), (unsigned long)novelIndex.total_pages);
+        UI_DrawReaderPage(novelText, novelProgressText, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
+        UI_PartShow();
+        // 将上页的索引保存
+        save_novel_index(indexPath, &novelIndex);
+        // sd_read_range(novelPath,novelIndex.current_bytes - current_page_content_bytes > 512 ? novelIndex.current_bytes - current_page_content_bytes - 512 : novelIndex.current_bytes - current_page_content_bytes  , novelIndex.current_bytes - current_page_content_bytes, (char *)novelContent, novelIndex.current_bytes - 512 > 0 ? 512 : novelIndex.current_bytes, &current_page_content_bytes);
+        // // safe_read_page(novelPath,index.current_bytes - 512 > 0 ? index.current_bytes - 512 : 0, (char *)novelContent, 512, &current_page_content_bytes);
+        // UI_DrawReaderPage(novelText, novelProgress, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
+        // UI_PartShow();
+        // LOGD("Page read offset: %lu bytes\r\n", novelIndex.current_bytes);
+        // LOGD("First few bytes: %02X %02X %02X %02X %02X\r\n",
+        //      (unsigned char)novelContent[0], (unsigned char)novelContent[1],
+        //      (unsigned char)novelContent[2], (unsigned char)novelContent[3],
+        //      (unsigned char)novelContent[4]);
 
-        // 尝试更新索引
-        current_page_content_bytes = UI_CalcReaderPageBytes(novelContent, FONT_SIZE_16);
-        LOGD("Current page content bytes: %d Step up...\r\n", current_page_content_bytes);
-        novelIndex.current_bytes -= current_page_content_bytes;
-        novelIndex.current_page -= 1;
-        // 最终保存索引
-        LOGD("Trying to save current novel index...\r\n");
-        
+        // // 尝试更新索引
+        // current_page_content_bytes = UI_CalcReaderPageBytes(novelContent, FONT_SIZE_16);
+        // LOGD("Current page content bytes: %d Step up...\r\n", current_page_content_bytes);
+        // novelIndex.current_bytes -= current_page_content_bytes;
+        // novelIndex.current_page -= 1;
+        // // 最终保存索引
+        // LOGD("Trying to save current novel index...\r\n");
     }
 }
 void UI_Content_Page_down_action(void)
@@ -154,25 +177,54 @@ void UI_Content_Page_down_action(void)
     // 判断是否已经越界
     if (novelIndex.current_page < novelIndex.total_pages)
     {
-        save_novel_index(indexPath, &novelIndex);
-        // 执行翻页操作逻辑
-        sd_read_range(novelPath, novelIndex.current_bytes, novelIndex.current_bytes + 512, (char *)novelContent, 512, &current_page_content_bytes);
-        // safe_read_page(novelPath, index.current_bytes, (char *)novelContent, 512, &current_page_content_bytes);
-        UI_DrawReaderPage(novelText, novelProgress, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
-        UI_PartShow();
 
-        LOGD("Page read offset: %lu bytes\r\n", novelIndex.current_bytes);
+        // 最新代码只用读取索引文件对应的字节即可
+        // 定义本次读取的范围
+        uint32_t read_start_at = novelIndex.current_bytes + novel_read_page_bytes(indexPath, novelIndex.current_page);
+        uint32_t read_end_at = read_start_at + novel_read_page_bytes(indexPath, novelIndex.current_page + 1);
+        // 读取小说内容
+        sd_read_range(novelPath, read_start_at, read_end_at, (char *)novelContent, read_end_at - read_start_at, &current_page_content_bytes);
+
+        LOGD("=========================\r\n");
+        LOGD("Page read start offset: %lu bytes\r\n", read_start_at);
+        LOGD("Page read end offset: %lu bytes\r\n", read_end_at);
+        LOGD("Read bytes: %d bytes\r\n", current_page_content_bytes);
+        LOGD("page bytes from index: %d bytes\r\n", novel_read_page_bytes(indexPath, novelIndex.current_page));
+        LOGD("page + 1 bytes from index: %d bytes\r\n", novel_read_page_bytes(indexPath, novelIndex.current_page + 1));
         LOGD("First few bytes: %02X %02X %02X %02X %02X\r\n",
              (unsigned char)novelContent[0], (unsigned char)novelContent[1],
              (unsigned char)novelContent[2], (unsigned char)novelContent[3],
              (unsigned char)novelContent[4]);
-        // 尝试更新索引
-        current_page_content_bytes = UI_CalcReaderPageBytes(novelContent, FONT_SIZE_16);
-        LOGD("Current page content bytes: %d Step down...\r\n", current_page_content_bytes);
-        novelIndex.current_bytes += current_page_content_bytes;
-        novelIndex.current_page += 1;
-        // 最终保存索引
-        LOGD("Trying to save current novel index...\r\n");
+        LOGD("=========================\r\n");
+        // 更新索引
+        novelIndex.current_bytes += novel_read_page_bytes(indexPath, novelIndex.current_page);
+        novelIndex.current_page++;
+        // 显示小说内容
+        uint8_t novelProgressText[32];
+        snprintf((char *)novelProgressText, sizeof(novelProgressText), "第 %lu / %lu 页", (unsigned long)(novelIndex.current_page), (unsigned long)novelIndex.total_pages);
+        UI_DrawReaderPage(novelText, novelProgressText, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
+        UI_PartShow();
+        // 将上页的索引保存
+        save_novel_index(indexPath, &novelIndex);
+
+        // // 执行翻页操作逻辑
+        // sd_read_range(novelPath, novelIndex.current_bytes, novelIndex.current_bytes + 512, (char *)novelContent, 512, &current_page_content_bytes);
+        // // safe_read_page(novelPath, index.current_bytes, (char *)novelContent, 512, &current_page_content_bytes);
+        // UI_DrawReaderPage(novelText, novelProgress, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
+        // UI_PartShow();
+
+        // LOGD("Page read offset: %lu bytes\r\n", novelIndex.current_bytes);
+        // LOGD("First few bytes: %02X %02X %02X %02X %02X\r\n",
+        //      (unsigned char)novelContent[0], (unsigned char)novelContent[1],
+        //      (unsigned char)novelContent[2], (unsigned char)novelContent[3],
+        //      (unsigned char)novelContent[4]);
+        // // 尝试更新索引
+        // current_page_content_bytes = UI_CalcReaderPageBytes(novelContent, FONT_SIZE_16);
+        // LOGD("Current page content bytes: %d Step down...\r\n", current_page_content_bytes);
+        // novelIndex.current_bytes += current_page_content_bytes;
+        // novelIndex.current_page += 1;
+        // // 最终保存索引
+        // LOGD("Trying to save current novel index...\r\n");
     }
 }
 
@@ -220,7 +272,9 @@ void UI_Refresh(void)
             {
                 // 索引文件不存在，重新计算索引
                 NovelIndex index = {};
-                if (Novel_CalcIndex(novelPath,indexPath, FONT_SIZE_16, &index) == FR_OK)
+                EPD_GPIOInit();
+                EPD_Init();
+                if (Novel_CalcIndex(novelPath, indexPath, FONT_SIZE_16, &index) == FR_OK)
                 {
                     index.current_bytes = 0;
                     index.current_page = 0;
@@ -246,11 +300,18 @@ void UI_Refresh(void)
                  (unsigned long)novelIndex.total_pages);
             // 读取索引中保存的内容
             novelContent = mymalloc(SRAMIN, 512);
+            LOGI("Trying to read first page content...\r\n");
             sd_read_range(novelPath, novelIndex.current_bytes, novelIndex.current_bytes + 512, (char *)novelContent, 512, &current_page_content_bytes);
-            UI_DrawReaderPage(novelfileName, novelProgress, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
+            uint8_t novelProgressText[32];
+            LOGI("2222");
+            snprintf((char *)novelProgressText, sizeof(novelProgressText), "第 %lu / %lu 页", (unsigned long)(novelIndex.current_page), (unsigned long)novelIndex.total_pages);
+            UI_DrawReaderPage(novelfileName, novelProgressText, novelContent, (int)(novelIndex.current_page * 100 / novelIndex.total_pages));
+            LOGI("3333");
             UI_PartShow();
-            current_page_content_bytes= UI_CalcReaderPageBytes(novelContent, FONT_SIZE_16);
-            novelIndex.current_bytes += current_page_content_bytes;
+            LOGI("!!!!");
+            current_page_content_bytes = UI_CalcReaderPageBytes(novelContent, FONT_SIZE_16);
+            LOGI("4444");
+            // novelIndex.current_bytes += current_page_content_bytes;
             myfree(SRAMIN, novelContent);
         }
         break;

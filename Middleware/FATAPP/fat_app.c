@@ -496,7 +496,8 @@ int save_novel_index(const char *path, NovelIndex *index)
     if (res == FR_NO_FILE)
     {
         res = f_open(&file, path, FA_CREATE_NEW | FA_WRITE | FA_READ);
-    } else if (res != FR_OK)
+    }
+    else if (res != FR_OK)
     {
         LOGE("File open failed: %d\r\n", res);
         return res;
@@ -587,7 +588,12 @@ FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_si
 // 定义一个缓存分页字节数
 #define MAX_CACHED_PAGES 512
     uint16_t page_bytes_buff[MAX_CACHED_PAGES] = {0};
+    uint32_t current_calc_bytes = 0;
     uint16_t page_trunk_start_offset = 0;
+
+    // 显示建立缓存提示
+    UI_DrawIndexLoadingScreen(0, file_size, 0);
+    UI_PartShow();
 
     // 主循环：遍历整个文件
     while (offset < file_size)
@@ -605,10 +611,18 @@ FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_si
 
         // 计算当前页能显示多少个字符
         uint16_t used_bytes = UI_CalcReaderPageBytes(read_buf, font_size);
+        current_calc_bytes += used_bytes; // 累计计算的字节数
+        // LOGD("Offset=%lu, Read %u bytes, Used for page=%u bytes\r\n",
+        //      (unsigned long)offset, bytes_read, used_bytes);
+        // vTaskDelay(pdMS_TO_TICKS(1000));
         page_bytes_buff[calculated_pages - page_trunk_start_offset] = used_bytes;
+
         // 判断当前分区值是否已经是满的
-        if (calculated_pages % MAX_CACHED_PAGES == 0)
+        if (calculated_pages % MAX_CACHED_PAGES == 0 && calculated_pages != 0)
         {
+            LOGD("Page bytes cache full at page %lu, writing to index file... Start_bytes=%d,End_bytes=%d\r\n", (unsigned long)calculated_pages,
+                 sizeof(NovelIndex) + (page_trunk_start_offset * sizeof(uint16_t)),
+                 sizeof(NovelIndex) + ((calculated_pages - page_trunk_start_offset) * sizeof(uint16_t)));
             // 代表是满的，需要把之前的缓存写入到 文件中
             sd_write_range(indexPath, sizeof(NovelIndex) + (page_trunk_start_offset * sizeof(uint16_t)),
                            (const char *)&page_bytes_buff[0], (calculated_pages - page_trunk_start_offset) * sizeof(uint16_t), &bytes_read);
@@ -616,6 +630,10 @@ FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_si
             page_trunk_start_offset = calculated_pages;
             // 使用memset清空缓存
             memset(page_bytes_buff, 0, sizeof(page_bytes_buff));
+            // 显示提示
+            // 显示建立缓存提示
+            UI_DrawIndexLoadingScreen(current_calc_bytes, file_size, 0);
+            UI_PartShow();
         }
         // 累加计数器
         calculated_pages++;
@@ -644,10 +662,59 @@ FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_si
                        (calculated_pages - page_trunk_start_offset) * sizeof(uint16_t),
                        &bytes_read);
     }
+    // 最终触发加载完毕提示让用户重启设备 (最后一个参数就代表是否计算完毕)
+    UI_DrawIndexLoadingScreen(file_size, file_size, 1);
+    UI_PartShow();
 
     f_close(&file);
 
     index->total_pages = total_pages;
     LOGI("分页完成，总页数: %lu\r\n", (unsigned long)index->total_pages);
     return FR_OK;
+}
+
+/**
+ * @brief 读取小说索引文件中指定页码对应的字节数
+ * @param indexPath  索引文件路径，如 "0:/Index/novel.idx"
+ * @param page_number 要读取的页码（从 0 开始）
+ * @retval uint32_t   返回该页对应的字节数，若出错返回 0
+ */
+uint32_t novel_read_page_bytes(const char *indexPath, uint32_t page_number)
+{
+    FIL file;
+    FRESULT res;
+    UINT br;
+    uint16_t page_bytes = 0;
+
+    // 打开索引文件
+    res = f_open(&file, indexPath, FA_READ);
+    if (res != FR_OK)
+    {
+        LOGE("Index file is not found: %s\r\n", indexPath);
+        return 0; // 未找到文件
+    }
+
+    // 计算页码对应的字节偏移位置
+    FSIZE_t offset = sizeof(NovelIndex) + page_number * sizeof(uint16_t);
+
+    // 移动文件指针到对应位置
+    res = f_lseek(&file, offset);
+    if (res != FR_OK)
+    {
+        LOGE("f_lseek failed: %d\r\n", res);
+        f_close(&file);
+        return 0;
+    }
+
+    // 读取该页对应的字节数
+    res = f_read(&file, &page_bytes, sizeof(uint16_t), &br);
+    f_close(&file);
+
+    if (res != FR_OK || br != sizeof(uint16_t))
+    {
+        LOGE("Read page bytes failed: %s\r\n", indexPath);
+        return 0;
+    }
+
+    return (uint32_t)page_bytes;
 }

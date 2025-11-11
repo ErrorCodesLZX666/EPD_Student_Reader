@@ -1,8 +1,12 @@
 #include "EPD.h"
 #include "systick.h"
 #include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
 
-#define delay_ms delay_1ms
+#define delay_ms(_ms) vTaskDelay(pdMS_TO_TICKS(_ms))
+
+
 u8 oldImage[12480];
 
 /*******************************************************************
@@ -22,7 +26,9 @@ void EPD_READBUSY(void)
 *******************************************************************/
 void EPD_HW_RESET(void)
 {
+	LOGD("ddd\r\n");
 	delay_ms(100);
+	LOGD("666\r\n");
 	EPD_RES_Clr();
 	delay_ms(20);
 	EPD_RES_Set();
@@ -47,6 +53,7 @@ void EPD_Update(void)
 		入口参数:无
 		说明:E-Paper工作在局刷模式
 *******************************************************************/
+#include "log.h"
 void EPD_PartInit(void)
 {
 	EPD_HW_RESET();

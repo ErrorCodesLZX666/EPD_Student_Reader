@@ -53,6 +53,8 @@ uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size);        
 void UI_DrawNovelListBox(const NovelListBox_t *box);
 // 更新错误显示界面
 void UI_DrawErrorScreen(const char *error_msg);
+// 建立索引界面
+void UI_DrawIndexLoadingScreen(uint32_t currentProgress, uint32_t totalProgress, uint8_t finish_flags);
 
 
 
