@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "log.h"
+#include "img_reader_icon.h"
 
 // 定义一个局部刷新次数，让他达到了这个次数就会刷新
 uint8_t partUpdateCounter = 0; // 当墨水屏>= 50 的时候就会显示错误。
@@ -76,6 +77,30 @@ static uint16_t DrawCenteredString(u16 y, const char *s, u16 size, u16 color)
     return text_w;
 }
 
+static uint16_t DrawCenteredTime(u16 y, const char *s, u16 size, u16 color)
+{
+    if (!s)
+        return 0;
+
+    /* 检查允许的字号 */
+    if (size != FONT_SIZE_12 && size != FONT_SIZE_16 && size != FONT_SIZE_24 && size != 48)
+    {
+        LOGE("Invalid font size %d, reset to 16\n", size);
+        size = FONT_SIZE_16;
+    }
+
+    u16 text_w = GetStringWidth(s, size);
+    u16 x = 0;
+    if (text_w < SCREEN_H)
+        x = (SCREEN_H - text_w) / 2;
+    else
+        x = 0;
+
+    /* 调用显示函数（你的 EPD_ShowString 或 EPD_ShowChinese 根据编码选择） */
+    EPD_ShowString(x, y, (u8 *)s, size, color);
+    return text_w;
+}
+
 // 功能：通过年月日计算星期几
 // 返回值：0=星期日, 1=星期一, ..., 6=星期六
 uint8_t Get_Weekday(uint16_t year, uint8_t month, uint8_t day)
@@ -120,7 +145,7 @@ void UI_DrawLockScreen(int hour, int minute, int year, int mouth, int day)
     char timestr[16], date_str[20];
     snprintf(timestr, sizeof(timestr), "%02d:%02d", hour, minute);
     snprintf(date_str, sizeof(date_str), "%04d年%02d月%02d日 周%s", year, mouth, day, weekend_str[Get_Weekday(year, mouth, day)]);
-    DrawCenteredString(100, timestr, FONT_SIZE_24, COLOR_BLACK);
+    DrawCenteredTime(70, timestr, 48, COLOR_BLACK);
 
     /* 日期行 */
     if (date_str)
@@ -158,10 +183,12 @@ void UI_DrawLoadingScreen(const char *title, const char *subtitle)
     u16 icon_w = 80;
     u16 icon_x = (SCREEN_H - icon_w) / 2;
     u16 icon_y = 60;
-    EPD_DrawRectangle(icon_x, icon_y, icon_x + icon_w, icon_y + icon_w, COLOR_BLACK, 0);
-    EPD_DrawLine(icon_x + 18, icon_y + 10, icon_x + 18, icon_y + 70, COLOR_BLACK);
-    EPD_DrawLine(icon_x + 28, icon_y + 30, icon_x + 72, icon_y + 30, COLOR_BLACK);
-    EPD_DrawLine(icon_x + 28, icon_y + 45, icon_x + 72, icon_y + 45, COLOR_BLACK);
+    //EPD_DrawRectangle(icon_x, icon_y, icon_x + icon_w, icon_y + icon_w, COLOR_BLACK, 0);
+    //EPD_DrawLine(icon_x + 18, icon_y + 10, icon_x + 18, icon_y + 70, COLOR_BLACK);
+    //EPD_DrawLine(icon_x + 28, icon_y + 30, icon_x + 72, icon_y + 30, COLOR_BLACK);
+    //EPD_DrawLine(icon_x + 28, icon_y + 45, icon_x + 72, icon_y + 45, COLOR_BLACK);
+    // 尝试使用图片作为Icon
+    EPD_ShowPicture(icon_x, icon_y, icon_w, icon_w, gImage_img_reader_icon, COLOR_WHITE);
 
     if (title)
         DrawCenteredString(icon_y + icon_w + 24, title, FONT_SIZE_16, COLOR_BLACK);
