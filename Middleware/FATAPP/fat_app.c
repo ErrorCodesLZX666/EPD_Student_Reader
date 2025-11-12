@@ -595,7 +595,6 @@ FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_si
     UI_DrawIndexLoadingScreen(0, file_size, 0);
     UI_PartShow();
 
-
     // 主循环：遍历整个文件
     while (offset < file_size)
     {
@@ -718,4 +717,73 @@ uint32_t novel_read_page_bytes(const char *indexPath, uint32_t page_number)
     }
 
     return (uint32_t)page_bytes;
+}
+
+FRESULT save_sys_time(RtcTimeType_t *time)
+{
+    FIL file;
+    FRESULT res;
+
+    res = f_open(&file, "1:/SysTime.dat", FA_WRITE);
+    if (res == FR_NO_FILE)
+    {
+        res = f_open(&file, "1:/SysTime.dat", FA_CREATE_NEW | FA_WRITE | FA_READ);
+    }
+    else if (res != FR_OK)
+    {
+        LOGE("File open failed: %d\r\n", res);
+        return res;
+    }
+    LOGI("Open index file successfull : %s\r\n", "1:/SysTime.dat");
+
+    UINT bw;
+    res = f_write(&file, time, sizeof(RtcTimeType_t), &bw);
+    LOGI("write finished.\r\n");
+    if (res != FR_OK || bw != sizeof(RtcTimeType_t))
+    {
+        LOGE("Write index failed: %s\r\n", "1:/SysTime.dat");
+        f_close(&file);
+        return -2;
+    }
+    f_close(&file);
+    return 0;
+}
+FRESULT load_sys_time(RtcTimeType_t *time)
+{
+    FIL file;
+    FRESULT res;
+    UINT br;
+
+    res = f_open(&file, "1:/SysTime.dat", FA_READ);
+    if (res == FR_NO_FILE)
+    {
+        LOGD("Current time is not exit,make init time ...\r\n");
+        // 如果文件不存在那么就使用保存文件函数，来尝试初始化一个文件
+        RtcTimeType_t initTime = {
+            .year = 00,
+            .month = 1,
+            .date = 1,
+            .hour = 0,
+            .minute = 0,
+            .second = 0
+        };
+        save_sys_time(&initTime);
+    }
+    else if (res != FR_OK)
+    {
+        LOGE("Date file is not found: %s\r\n", "1:/SysTime.dat");
+        memset(time, 0, sizeof(RtcTimeType_t));
+        return -1; // 未找到文件
+    }
+
+    res = f_read(&file, time, sizeof(RtcTimeType_t), &br);
+    f_close(&file);
+    if (res != FR_OK || br != sizeof(RtcTimeType_t))
+    {
+        LOGE("Read date file failed: %s\r\n", "1:/SysTime.dat");
+        memset(time, 0, sizeof(RtcTimeType_t));
+        return -2;
+    }
+
+    return 0; // 成功
 }

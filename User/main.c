@@ -22,6 +22,7 @@
 #include "APP_GUI.h"
 #include "SYS_GUI.h"
 #include "SYS_KEY.h"
+#include "mcu_rtc.h"
 
 // 尝试定义任务句柄
 TaskHandle_t hTask_entries = NULL;
@@ -33,7 +34,6 @@ TaskHandle_t hTask_task_font_config = NULL;
 // 磁盘监视器
 void task_disk_montor(void *taskParam)
 {
-
     while (1)
     {
         DiskInfo_t flash_disk = {}, sd_disk = {};
@@ -43,11 +43,8 @@ void task_disk_montor(void *taskParam)
     }
 }
 
-
-
-
-
-typedef struct {
+typedef struct
+{
     uint32_t total_bytes;
     uint32_t total_pages;
     uint32_t current_page;
@@ -66,20 +63,25 @@ int test_save_file(void)
 
     // 确保目录存在
     res = f_opendir(&dir, "0:/Index");
-    if (res != FR_OK) {
+    if (res != FR_OK)
+    {
         LOGW("Directory 0:/Index not found (res=%d), creating...\r\n", res);
         res = f_mkdir("0:/Index");
-        if (res != FR_OK) {
+        if (res != FR_OK)
+        {
             LOGE("Create directory failed (res=%d)\r\n", res);
             return -1;
         }
-    } else {
+    }
+    else
+    {
         f_closedir(&dir);
     }
 
     // 打开文件
     res = f_open(&file, test_path, FA_CREATE_ALWAYS | FA_WRITE);
-    if (res != FR_OK) {
+    if (res != FR_OK)
+    {
         LOGE("f_open failed: %s (res=%d)\r\n", test_path, res);
         return -2;
     }
@@ -90,14 +92,14 @@ int test_save_file(void)
         .total_bytes = 1075739,
         .total_pages = 2693,
         .current_page = 120,
-        .current_bytes = 48000
-    };
+        .current_bytes = 48000};
 
     // 写入数据
     res = f_write(&file, &test_data, sizeof(TestIndex), &bw);
     LOGI("f_write result: res=%d, bw=%u (expect=%u)\r\n", res, bw, (unsigned)sizeof(TestIndex));
 
-    if (res != FR_OK || bw != sizeof(TestIndex)) {
+    if (res != FR_OK || bw != sizeof(TestIndex))
+    {
         LOGE("Write failed or incomplete.\r\n");
         f_close(&file);
         return -3;
@@ -116,7 +118,8 @@ int test_save_file(void)
     memset(&readback, 0, sizeof(readback));
 
     res = f_open(&file, test_path, FA_READ);
-    if (res != FR_OK) {
+    if (res != FR_OK)
+    {
         LOGE("Reopen file failed: %s (%d)\r\n", test_path, res);
         return -4;
     }
@@ -126,15 +129,17 @@ int test_save_file(void)
     f_close(&file);
     LOGI("f_read result: res=%d, br=%u\r\n", res, br);
 
-    if (memcmp(&readback, &test_data, sizeof(TestIndex)) == 0) {
+    if (memcmp(&readback, &test_data, sizeof(TestIndex)) == 0)
+    {
         LOGI("SD card write/read test passed. File system OK.\r\n");
         return 0;
-    } else {
+    }
+    else
+    {
         LOGE("Data mismatch! SD card or FatFs error.\r\n");
         return -5;
     }
 }
-
 
 void task_force_update_font(void *taskParam)
 {
@@ -152,6 +157,28 @@ void task_force_update_font(void *taskParam)
         // FONT_loading_success_flag = 0;
     }
 }
+void task_time_monitor(void *taskParams)
+{
+    RtcTimeType_t time;
+    uint8_t last_minute = 0;
+    // 尝试输出时间
+    while (1)
+    {
+
+        RtcGetCurrentTimeStruct(&time);
+        LOGD("TimeMonitor Current time: 20%02d-%02d-%02d %02d:%02d:%02d\r\n",
+             time.year, time.month, time.date,
+             time.hour, time.minute, time.second);
+        if (last_minute != time.minute)
+        {
+            last_minute = time.minute;
+            // 每隔一段时间保存一次时间,这里使用min来确认保存
+            save_sys_time(&time);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
 // u8 ImageBuffergg[(416 * 240) / 8];
 // 尝试初始化字库
 void task_font_config()
@@ -164,7 +191,7 @@ void task_font_config()
         UI_PartShow();
         return;
     }
-    
+
     // 首先尝试判断字库是否存在
     if (font_init())
     {
@@ -238,7 +265,6 @@ void task_font_config()
     SYSGUI_Entries(); // 启动GUI任务
     xTaskCreate(Key_Task, "Key_Task", 2048, NULL, 3, NULL);
 
-
     // 下方代码是用来测试小说显示的
     // char test_text[] = "PS：\r\n①1V1主受HE。谢绝转载。\r\n②本文主线夫夫携手打怪解谜打孩子，前世今生双线剧情向。\r\n②nTest显示English本文主线夫夫携手打怪解谜打孩子，前世今生双线剧情向。\r\n③非复仇流！非升级流爽文！\r\n\r\n\r\n内容标签：重生 天作之合 灵异神怪 仙侠修真\r\n";
     // UI_DrawReaderPage("测试显示中文.txt","000",test_text,23);
@@ -250,7 +276,8 @@ void task_font_config()
 
     // test_save_file();
 
-    while (1);
+    while (1)
+        ;
 }
 
 // 任务系统初始化
@@ -268,6 +295,14 @@ void task_sys_init(void *taskParam)
     sd_fatfs_init(); // 初始化挂载SDCard磁盘
     LOGD("Mounting Disk [FLASH_SPI]...\r\n");
     spi_fatfs_init(); // 初始化挂载SPI_FLASH磁盘
+    LOGD("Loading RTC Clock ...\r\n");
+    rtc_config(); // 初始化RTC时钟
+    RtcTimeType_t currentTime = {};
+    load_sys_time(&currentTime); // 尝试加载保存的时间文件
+    LOGD("Time load status,Current Time: 20%02d-%02d-%02d %02d:%02d:%02d\r\n",
+         currentTime.year, currentTime.month, currentTime.date,
+         currentTime.hour, currentTime.minute, currentTime.second);
+    RtcTimeConfigStruct(&currentTime); // 配置当前时间到RTC中
     LOGD("Starting disk mountor progreess...\r\n");
     xTaskCreate(task_disk_montor, "task_disk_montor", 1024, NULL, 1, &hTask_disk_montor_progress);
     LOGD("Starting FONT init progress ...\r\n");
@@ -276,7 +311,7 @@ void task_sys_init(void *taskParam)
     LOGW("Trying to loading GUI ...\r\n");
     ret = xTaskCreate(task_font_config, "task_font_config", 1024, NULL, 1, &hTask_task_font_config);
     // ret = xTaskCreate(task_force_update_font,"task_force_update_font",1024,NULL,1,NULL);
-
+    ret = xTaskCreate(task_time_monitor, "task_time_monitor", 1024, NULL, 1, NULL);
     // 尝试启动LVGL
     while (1);
 }
@@ -309,7 +344,8 @@ int main(void)
     xTaskCreate(task_entries, "task_entries", 1024 * 10, NULL, 1, &hTask_entries);
     // 开启任务调度功能
     vTaskStartScheduler();
-    while (1);
+    while (1)
+        ;
 }
 
 void usart0_on_recive(uint8_t *datas, uint8_t len)

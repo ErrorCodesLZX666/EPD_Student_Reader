@@ -85,5 +85,10 @@ uint32_t novel_read_page_bytes(const char *indexPath, uint32_t page_number);
 //=======================================
 // 计算某一个小说的文件索引
 FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_size, NovelIndex *index);
-
+//=======================================
+// 写入 或者 读取保存的时间文件
+#include "mcu_rtc.h"
+FRESULT save_sys_time(RtcTimeType_t *time);
+FRESULT load_sys_time(RtcTimeType_t *time);
+//=======================================
 #endif // _FAT_APP_H
