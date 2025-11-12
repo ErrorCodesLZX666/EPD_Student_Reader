@@ -595,6 +595,7 @@ FRESULT Novel_CalcIndex(const char *path, const char *indexPath, uint8_t font_si
     UI_DrawIndexLoadingScreen(0, file_size, 0);
     UI_PartShow();
 
+
     // 主循环：遍历整个文件
     while (offset < file_size)
     {

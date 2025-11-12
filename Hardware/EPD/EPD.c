@@ -5,6 +5,7 @@
 #include "task.h"
 
 
+#define delay_ms(_ms) vTaskDelay(pdMS_TO_TICKS(_ms))
 
 u8 oldImage[12480];
 
