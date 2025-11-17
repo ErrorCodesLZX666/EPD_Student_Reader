@@ -35,6 +35,9 @@ void SYSGUI_Entries(void);      // GUI初始化入口（在main中调用）
 void UI_SwitchTo(UI_State_t newState);  // 状态切换函数
 void UI_Refresh(void);          // 根据当前状态重绘界面
 
+#include "SYS_GUI.h"
+void UI_TimeUpdateToScreen(const RtcTimeType_t* time); // 更新时间到屏幕
+
 
 void GUI_Event_Init(void);
 

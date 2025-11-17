@@ -342,3 +342,19 @@ void SYSGUI_Entries(void)
     UI_PartShowInit();
     xTaskCreate(vTask_GUI, "GUI_Task", 2048, NULL, 2, NULL);
 }
+
+void UI_TimeUpdateToScreen(const RtcTimeType_t *time)
+{
+    // 使用Switch进行判断
+    switch (uiStatus)
+    {
+    case UI_STATE_LOCK:
+        // 等于锁屏界面
+        UI_flushTime_LockScreen(time);
+        UI_PartShow();
+        break;
+    default:
+        LOGE("Unhandled UI state for time update,no thing to do. UI_STATUS: %d\r\n", uiStatus);
+        break;
+    }
+}

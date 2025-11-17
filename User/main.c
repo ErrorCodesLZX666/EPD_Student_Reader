@@ -173,6 +173,9 @@ void task_time_monitor(void *taskParams)
         {
             last_minute = time.minute;
             // 每隔一段时间保存一次时间,这里使用min来确认保存
+            // TODOS： 调用GUI中的时间更新函数，尝试判断不同的界面并且尝试更新时间
+            UI_TimeUpdateToScreen(&time);
+            // 保存时间到Flash中
             save_sys_time(&time);
         }
 
@@ -222,62 +225,12 @@ void task_font_config()
 
     // 加载开机界面
 
-    // UI_DrawLoadingScreen("智能学生便携墨水屏", "仅仅做懂学生的墨水屏，让墨水屏更便捷实用");
-    // UI_Show();              // 使用驱动展示到墨水屏
-    // vTaskDelay(pdMS_TO_TICKS(5000));
-    // // 加载使用锁屏界面
-    // UI_DrawLockScreen(12,00,2025,11,1);
-    // UI_PartShowInit();
-    // UI_PartShow();
-    // uint8_t min = 0;
-    // for (min = 0; min < 60; min++)
-    // {
-    //     /* 测试是否是因为字库导致的 */
-    //     min ++;
-    //     UI_UpdateLockDatetime(12,min,2025,11,1);
-    //     LOGD("Test Image buffer update ... index = %d \r\n",min);
-    // }
-    // while(1) {
-    // 	min ++;
-    //     // if(min % 30 == 0)   UI_DrawLockScreen(12,min,2025,11,1);
-    //     vTaskDelay(pdMS_TO_TICKS(3000));
-    //     UI_UpdateLockDatetime(12,min,2025,11,1);
-    //     UI_PartShow();
-
-    // }
-
-    // char **txt_files = NULL;
-    // int file_count = 0;
-    // 尝试调用文件列表读取函数
-    // sd_read_dir_txt("0:/", &txt_files, &file_count);
-    // NovelListBox_t box = {
-    //     .novel_list = txt_files,
-    //     .novel_count = file_count,
-    //     .current_index = 0,
-    //     .time_str = "12:35"};
-
-    // UI_DrawNovelListBox(&box);
-    // UI_PartShowInit();
-    // UI_PartShow();
-
     // 初始化项目级别的GUI
     GUI_key_config();
     SYSGUI_Entries(); // 启动GUI任务
     xTaskCreate(Key_Task, "Key_Task", 2048, NULL, 3, NULL);
 
-    // 下方代码是用来测试小说显示的
-    // char test_text[] = "PS：\r\n①1V1主受HE。谢绝转载。\r\n②本文主线夫夫携手打怪解谜打孩子，前世今生双线剧情向。\r\n②nTest显示English本文主线夫夫携手打怪解谜打孩子，前世今生双线剧情向。\r\n③非复仇流！非升级流爽文！\r\n\r\n\r\n内容标签：重生 天作之合 灵异神怪 仙侠修真\r\n";
-    // UI_DrawReaderPage("测试显示中文.txt","000",test_text,23);
-    // // 尝试计算使用显示字节多少
-    // uint32_t used_bytes = UI_CalcReaderPageBytes(test_text,16);
-    // UI_PartShowInit();
-    // UI_PartShow();
-    // LOGD("统计完毕，显式当前需要使用到字节： %d\r\n",used_bytes);
-
-    // test_save_file();
-
-    while (1)
-        ;
+    while (1);
 }
 
 // 任务系统初始化

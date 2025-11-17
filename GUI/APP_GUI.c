@@ -145,33 +145,33 @@ void UI_DrawLockScreen(int hour, int minute, int year, int mouth, int day)
     char timestr[16], date_str[20];
     snprintf(timestr, sizeof(timestr), "%02d:%02d", hour, minute);
     snprintf(date_str, sizeof(date_str), "%04d年%02d月%02d日 周%s", year, mouth, day, weekend_str[Get_Weekday(year, mouth, day)]);
-    //DrawCenteredTime(70, timestr, 48, COLOR_BLACK);
+    // DrawCenteredTime(70, timestr, 48, COLOR_BLACK);
     EPD_ShowString(124, 33, (u8 *)timestr, 48, COLOR_BLACK);
     /* 日期行 */
     if (date_str)
     {
-        EPD_ShowChinese(84,91,date_str,FONT_SIZE_16,COLOR_BLACK);
-        //DrawCenteredString(130, date_str, FONT_SIZE_16, COLOR_BLACK);
+        EPD_ShowChinese(84, 91, date_str, FONT_SIZE_16, COLOR_BLACK);
+        // DrawCenteredString(130, date_str, FONT_SIZE_16, COLOR_BLACK);
     }
 
     /* 下方提示行 */
     // DrawCenteredString(SCREEN_W - 40, "按下任意键启用屏幕", FONT_SIZE_12, COLOR_BLACK);
-    
+
     // 绘制中间条 3 px 像素
     for (uint8_t counter = 0; counter < 3; counter++)
     {
-        EPD_DrawLine(257 + counter,34,257 + counter,SCREEN_W-34,COLOR_BLACK);
+        EPD_DrawLine(257 + counter, 34, 257 + counter, SCREEN_W - 34, COLOR_BLACK);
     }
-    
-    //EPD_ShowPicture(10,10,16,16,gImage_temperature_icon,COLOR_WHITE);
-    // 绘制两个Icon
-    // 温度图标
-    EPD_ShowPicture(276,133,16,16,gImage_temperature_icon,COLOR_WHITE);
+
+    // EPD_ShowPicture(10,10,16,16,gImage_temperature_icon,COLOR_WHITE);
+    //  绘制两个Icon
+    //  温度图标
+    EPD_ShowPicture(276, 133, 16, 16, gImage_temperature_icon, COLOR_WHITE);
     // 湿度图标
-    EPD_ShowPicture(276,168,16,16,gImage_humidity_icon,COLOR_WHITE);
+    EPD_ShowPicture(276, 168, 16, 16, gImage_humidity_icon, COLOR_WHITE);
     // 显示温度和湿度
-    EPD_ShowChinese(297,133,(u8 *)"N/A",FONT_SIZE_16,COLOR_BLACK);
-    EPD_ShowChinese(297,168,(u8 *)"N/A",FONT_SIZE_16,COLOR_BLACK);
+    EPD_ShowChinese(297, 133, (u8 *)"N/A", FONT_SIZE_16, COLOR_BLACK);
+    EPD_ShowChinese(297, 168, (u8 *)"N/A", FONT_SIZE_16, COLOR_BLACK);
 }
 
 // 刷新锁屏的实现（使用墨水屏的局部刷新）
@@ -201,10 +201,10 @@ void UI_DrawLoadingScreen(const char *title, const char *subtitle)
     u16 icon_x = (SCREEN_H - icon_w) / 2;
     u16 icon_y = 60;
     // TODOS ： 这里使用的是旧版本的绘制程序
-    //EPD_DrawRectangle(icon_x, icon_y, icon_x + icon_w, icon_y + icon_w, COLOR_BLACK, 0);
-    //EPD_DrawLine(icon_x + 18, icon_y + 10, icon_x + 18, icon_y + 70, COLOR_BLACK);
-    //EPD_DrawLine(icon_x + 28, icon_y + 30, icon_x + 72, icon_y + 30, COLOR_BLACK);
-    //EPD_DrawLine(icon_x + 28, icon_y + 45, icon_x + 72, icon_y + 45, COLOR_BLACK);
+    // EPD_DrawRectangle(icon_x, icon_y, icon_x + icon_w, icon_y + icon_w, COLOR_BLACK, 0);
+    // EPD_DrawLine(icon_x + 18, icon_y + 10, icon_x + 18, icon_y + 70, COLOR_BLACK);
+    // EPD_DrawLine(icon_x + 28, icon_y + 30, icon_x + 72, icon_y + 30, COLOR_BLACK);
+    // EPD_DrawLine(icon_x + 28, icon_y + 45, icon_x + 72, icon_y + 45, COLOR_BLACK);
     // 尝试使用图片作为Icon
     EPD_ShowPicture(icon_x, icon_y, icon_w, icon_w, gImage_img_reader_icon, COLOR_WHITE);
 
@@ -236,7 +236,6 @@ void UI_DrawReaderPage(const char *heading, const char *progress_text, const cha
         u16 x = (text_w < SCREEN_H) ? (SCREEN_H - 8 - text_w) : (SCREEN_H - 8);
         EPD_ShowChinese(x, 10, (u8 *)progress_text, FONT_SIZE_12, COLOR_BLACK);
     }
-
 
     /* 进度条 */
     u16 bar_x = 8, bar_y = 26, bar_w = SCREEN_H - 16, bar_h = 6;
@@ -820,4 +819,32 @@ void UI_DrawIndexLoadingScreen(uint32_t currentProgress, uint32_t totalProgress,
         // 打印提示
         DrawCenteredString(SCREEN_H - 30, "第一次打开小说，建立索引中", FONT_SIZE_12, COLOR_BLACK);
     }
+}
+
+// ======================  以下为 UI 局部跟新函数 ====================== */
+void UI_flushTime_LockScreen(const RtcTimeType_t *time)
+{
+    /* 边框 */
+    EPD_DrawRectangle(2, 2, SCREEN_H - 3, SCREEN_W - 3, COLOR_BLACK, 0);
+
+    /* 时间（HH:MM） — 居中显示，采用大字号 24 */
+    char timestr[16], date_str[20];
+    snprintf(timestr, sizeof(timestr), "%02d:%02d", time->hour, time->minute);
+    snprintf(date_str, sizeof(date_str), "%04d年%02d月%02d日 周%s", time->year, time->month, time->date, weekend_str[Get_Weekday(time->year, time->month, time->date)]);
+    // DrawCenteredTime(70, timestr, 48, COLOR_BLACK);
+    uint16_t text_w = GetStringWidth(timestr, 48);
+    EPD_DrawRectangle(124,33,124+text_w,33+48,COLOR_WHITE,1); // 擦除旧时间
+    EPD_ShowString(124, 33, (u8 *)timestr, 48, COLOR_BLACK);
+    /* 日期行 */
+    if (date_str)
+    {
+        text_w = GetStringWidth(date_str, FONT_SIZE_16);
+        EPD_DrawRectangle(84,91,84+text_w,91+16,COLOR_WHITE,1); // 擦除旧时间
+        EPD_ShowChinese(84, 91, date_str, FONT_SIZE_16, COLOR_BLACK);
+        // DrawCenteredString(130, date_str, FONT_SIZE_16, COLOR_BLACK);
+    }
+}
+
+void UI_flushTime_NovelListBox(const RtcTimeType_t *time) {
+    
 }

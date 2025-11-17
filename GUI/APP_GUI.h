@@ -57,6 +57,11 @@ void UI_DrawErrorScreen(const char *error_msg);
 void UI_DrawIndexLoadingScreen(uint32_t currentProgress, uint32_t totalProgress, uint8_t finish_flags);
 
 
+/* 尝试定义更新时间的接口 */
+#include "mcu_rtc.h"            // 统一使用RTC定义的时间结构体
+void UI_flushTime_LockScreen(const RtcTimeType_t *time);
+// void UI_flushTime_NovelListBox(const RtcTimeType_t *time);
+// void UI_flushTime_ReaderPage(const RtcTimeType_t *time);
 
 
 void UI_Show(void);
