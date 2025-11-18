@@ -21,6 +21,10 @@ void RtcTimeConfigBCD(uint8_t year, uint8_t month, uint8_t date, uint8_t week, u
 void RtcTimeConfigStruct(RtcTimeType_t *datetime);
 void RtcGetCurrentTimeStruct(RtcTimeType_t *datetime);
 
+// 定义每分钟循环触发一次闹钟功能
+void RtcEachMinuteLoopEnable(void);
+// extern void RtcAlarmPerMinute_cb(void);
+
 int BcdToDecimal(int bcd);
 int DecimalToBcd(int decimal);
 #endif

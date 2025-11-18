@@ -43,104 +43,6 @@ void task_disk_montor(void *taskParam)
     }
 }
 
-typedef struct
-{
-    uint32_t total_bytes;
-    uint32_t total_pages;
-    uint32_t current_page;
-    uint32_t current_bytes;
-} TestIndex;
-
-int test_save_file(void)
-{
-    FRESULT res;
-    FIL file;
-    UINT bw;
-    const char *test_path = "0:/Index/test.idx";
-    DIR dir;
-
-    LOGI("==== [TEST] SD File Write Test Start ====\r\n");
-
-    // 确保目录存在
-    res = f_opendir(&dir, "0:/Index");
-    if (res != FR_OK)
-    {
-        LOGW("Directory 0:/Index not found (res=%d), creating...\r\n", res);
-        res = f_mkdir("0:/Index");
-        if (res != FR_OK)
-        {
-            LOGE("Create directory failed (res=%d)\r\n", res);
-            return -1;
-        }
-    }
-    else
-    {
-        f_closedir(&dir);
-    }
-
-    // 打开文件
-    res = f_open(&file, test_path, FA_CREATE_ALWAYS | FA_WRITE);
-    if (res != FR_OK)
-    {
-        LOGE("f_open failed: %s (res=%d)\r\n", test_path, res);
-        return -2;
-    }
-    LOGI("File opened successfully: %s\r\n", test_path);
-
-    // 准备要写入的测试数据（16 字节）
-    TestIndex test_data = {
-        .total_bytes = 1075739,
-        .total_pages = 2693,
-        .current_page = 120,
-        .current_bytes = 48000};
-
-    // 写入数据
-    res = f_write(&file, &test_data, sizeof(TestIndex), &bw);
-    LOGI("f_write result: res=%d, bw=%u (expect=%u)\r\n", res, bw, (unsigned)sizeof(TestIndex));
-
-    if (res != FR_OK || bw != sizeof(TestIndex))
-    {
-        LOGE("Write failed or incomplete.\r\n");
-        f_close(&file);
-        return -3;
-    }
-
-    // 强制同步
-    res = f_sync(&file);
-    LOGI("f_sync result: %d\r\n", res);
-
-    // 关闭文件
-    f_close(&file);
-    LOGI("File closed successfully.\r\n");
-
-    // 再次打开读取验证
-    TestIndex readback;
-    memset(&readback, 0, sizeof(readback));
-
-    res = f_open(&file, test_path, FA_READ);
-    if (res != FR_OK)
-    {
-        LOGE("Reopen file failed: %s (%d)\r\n", test_path, res);
-        return -4;
-    }
-
-    UINT br;
-    res = f_read(&file, &readback, sizeof(TestIndex), &br);
-    f_close(&file);
-    LOGI("f_read result: res=%d, br=%u\r\n", res, br);
-
-    if (memcmp(&readback, &test_data, sizeof(TestIndex)) == 0)
-    {
-        LOGI("SD card write/read test passed. File system OK.\r\n");
-        return 0;
-    }
-    else
-    {
-        LOGE("Data mismatch! SD card or FatFs error.\r\n");
-        return -5;
-    }
-}
-
 void task_force_update_font(void *taskParam)
 {
     // 强制运行更新字库
@@ -157,7 +59,10 @@ void task_force_update_font(void *taskParam)
         // FONT_loading_success_flag = 0;
     }
 }
-void task_time_monitor(void *taskParams)
+
+// 定义是否输出时间到屏幕的任务
+#define SHOW_TIME_TO_SCREEN 1
+void task_loop_monitor(void *taskParams)
 {
     RtcTimeType_t time;
     uint8_t last_minute = 0;
@@ -166,9 +71,12 @@ void task_time_monitor(void *taskParams)
     {
 
         RtcGetCurrentTimeStruct(&time);
+#if SHOW_TIME_TO_SCREEN
         LOGD("TimeMonitor Current time: 20%02d-%02d-%02d %02d:%02d:%02d\r\n",
              time.year, time.month, time.date,
              time.hour, time.minute, time.second);
+        LOGD("----------------------------------------\r\n");
+#endif
         if (last_minute != time.minute)
         {
             last_minute = time.minute;
@@ -179,7 +87,7 @@ void task_time_monitor(void *taskParams)
             save_sys_time(&time);
         }
 
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(3000));
     }
 }
 // u8 ImageBuffergg[(416 * 240) / 8];
@@ -209,7 +117,6 @@ void task_font_config()
         {
             // 字库更新失败
             LOGE("FONT loading failed ... \r\n");
-
             UI_DrawErrorScreen("Font library load failed!");
             UI_PartShowInit();
             UI_PartShow();
@@ -230,7 +137,8 @@ void task_font_config()
     SYSGUI_Entries(); // 启动GUI任务
     xTaskCreate(Key_Task, "Key_Task", 2048, NULL, 3, NULL);
 
-    while (1);
+    while (1)
+        ;
 }
 
 // 任务系统初始化
@@ -250,12 +158,6 @@ void task_sys_init(void *taskParam)
     spi_fatfs_init(); // 初始化挂载SPI_FLASH磁盘
     LOGD("Loading RTC Clock ...\r\n");
     rtc_config(); // 初始化RTC时钟
-    RtcTimeType_t currentTime = {};
-    load_sys_time(&currentTime); // 尝试加载保存的时间文件
-    LOGD("Time load status,Current Time: 20%02d-%02d-%02d %02d:%02d:%02d\r\n",
-         currentTime.year, currentTime.month, currentTime.date,
-         currentTime.hour, currentTime.minute, currentTime.second);
-    RtcTimeConfigStruct(&currentTime); // 配置当前时间到RTC中
     LOGD("Starting disk mountor progreess...\r\n");
     xTaskCreate(task_disk_montor, "task_disk_montor", 1024, NULL, 1, &hTask_disk_montor_progress);
     LOGD("Starting FONT init progress ...\r\n");
@@ -264,9 +166,10 @@ void task_sys_init(void *taskParam)
     LOGW("Trying to loading GUI ...\r\n");
     ret = xTaskCreate(task_font_config, "task_font_config", 1024, NULL, 1, &hTask_task_font_config);
     // ret = xTaskCreate(task_force_update_font,"task_force_update_font",1024,NULL,1,NULL);
-    ret = xTaskCreate(task_time_monitor, "task_time_monitor", 1024, NULL, 1, NULL);
+    ret = xTaskCreate(task_loop_monitor, "task_loop_monitor", 1024, NULL, 1, NULL);
     // 尝试启动LVGL
-    while (1);
+    while (1)
+        ;
 }
 
 // 任务入口点

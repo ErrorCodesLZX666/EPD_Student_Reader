@@ -830,7 +830,7 @@ void UI_flushTime_LockScreen(const RtcTimeType_t *time)
     /* 时间（HH:MM） — 居中显示，采用大字号 24 */
     char timestr[16], date_str[20];
     snprintf(timestr, sizeof(timestr), "%02d:%02d", time->hour, time->minute);
-    snprintf(date_str, sizeof(date_str), "%04d年%02d月%02d日 周%s", time->year, time->month, time->date, weekend_str[Get_Weekday(time->year, time->month, time->date)]);
+    snprintf(date_str, sizeof(date_str), "20%02d年%02d月%02d日 周%s", time->year, time->month, time->date, weekend_str[Get_Weekday(time->year, time->month, time->date)]);
     // DrawCenteredTime(70, timestr, 48, COLOR_BLACK);
     uint16_t text_w = GetStringWidth(timestr, 48);
     EPD_DrawRectangle(124,33,124+text_w,33+48,COLOR_WHITE,1); // 擦除旧时间
