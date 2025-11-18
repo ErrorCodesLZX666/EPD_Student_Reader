@@ -8,6 +8,7 @@
 #include "malloc.h"
 #include "fat_app.h"
 #include <string.h>
+#include "AHT20.h"
 
 #include "FreeRTOS.h" // 加载RTOS
 #include "task.h"
@@ -235,10 +236,19 @@ void UI_Logic_get_novel_list(void)
 
 void UI_Refresh(void)
 {
+
     switch (uiStatus)
     {
     case UI_STATE_LOCK:
-        UI_DrawLockScreen(12, 35, 2025, 11, 3);
+        RtcTimeType_t time;
+        RtcGetCurrentTimeStruct(&time);
+        UI_DrawLockScreen(time.hour, time.minute, time.year, time.month, time.date);
+        AHT20_Detection_Start();
+        vTaskDelay(pdMS_TO_TICKS(100)); // 等待测量完成
+        float temperature = 0;
+        float humidity = 0;
+        AHT20_Get_Values(&temperature, &humidity);
+        UI_flushAHT20_LockScreen(temperature, humidity);
         UI_PartShow();
         break;
     case UI_STATE_LOADING:
@@ -252,6 +262,9 @@ void UI_Refresh(void)
         sd_read_dir_txt("0:/", &novelsList, &box.novel_count);
         box.novel_list = novelsList;
         UI_DrawNovelListBox(&box);
+        RtcTimeType_t time;
+        RtcGetCurrentTimeStruct(&time);
+        UI_flushTime_NovelListBox(&time);
         UI_PartShow();
         break;
     }
@@ -353,13 +366,19 @@ void UI_TimeUpdateToScreen(const RtcTimeType_t *time)
         UI_flushTime_LockScreen(time);
         UI_PartShow();
         break;
+    case UI_STATE_LIST:
+        // 等于列表界面
+        UI_flushTime_NovelListBox(time);
+        UI_PartShow();
+        break;
     default:
         LOGE("Unhandled UI state for time update,no thing to do. UI_STATUS: %d\r\n", uiStatus);
         break;
     }
 }
 
-void UI_AHT20UpdateToScreen(float temperature, float humidity) {
+void UI_AHT20UpdateToScreen(float temperature, float humidity)
+{
     // 使用Switch进行判断
     switch (uiStatus)
     {

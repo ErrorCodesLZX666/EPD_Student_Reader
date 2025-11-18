@@ -757,33 +757,40 @@ void UI_flushTime_LockScreen(const RtcTimeType_t *time)
     snprintf(date_str, sizeof(date_str), "20%02d年%02d月%02d日 周%s", time->year, time->month, time->date, weekend_str[Get_Weekday(time->year, time->month, time->date)]);
     // DrawCenteredTime(70, timestr, 48, COLOR_BLACK);
     uint16_t text_w = GetStringWidth(timestr, 48);
-    EPD_DrawRectangle(124,33,124+text_w,33+48,COLOR_WHITE,1); // 擦除旧时间
+    EPD_DrawRectangle(124, 33, 124 + text_w, 33 + 48, COLOR_WHITE, 1); // 擦除旧时间
     EPD_ShowString(124, 33, (u8 *)timestr, 48, COLOR_BLACK);
     /* 日期行 */
     if (date_str)
     {
         text_w = GetStringWidth(date_str, FONT_SIZE_16);
-        EPD_DrawRectangle(84,91,84+text_w,91+16,COLOR_WHITE,1); // 擦除旧时间
+        EPD_DrawRectangle(84, 91, 84 + text_w, 91 + 16, COLOR_WHITE, 1); // 擦除旧时间
         EPD_ShowChinese(84, 91, date_str, FONT_SIZE_16, COLOR_BLACK);
         // DrawCenteredString(130, date_str, FONT_SIZE_16, COLOR_BLACK);
     }
 }
 
-void UI_flushTime_NovelListBox(const RtcTimeType_t *time) {
-    
+void UI_flushTime_NovelListBox(const RtcTimeType_t *time)
+{
+
+    // 显示顶部时间
+    char timestr[16];
+    snprintf(timestr, sizeof(timestr), "%02d:%02d", time->hour, time->minute);
+    // 擦除时间
+    EPD_DrawRectangle(5, 5, 5 + GetStringWidth(timestr, 16) + 50, 5 + 16, COLOR_WHITE, 1);
+    EPD_ShowString(5, 5, (u8 *)timestr, 16, COLOR_BLACK);
 }
 
-void UI_flushAHT20_LockScreen(float temperature, float humidity) {
+void UI_flushAHT20_LockScreen(float temperature, float humidity)
+{
     // 显示温度和湿度
     char temp_str[16], hum_str[16];
     snprintf(temp_str, sizeof(temp_str), "%0.1f ℃", temperature);
     snprintf(hum_str, sizeof(hum_str), "%0.1f% %", humidity);
     uint16_t text_w = GetStringWidth(temp_str, FONT_SIZE_16);
-    EPD_DrawRectangle(297,133,297+text_w + 20,133+16,COLOR_WHITE,1); // 擦除旧温度
+    EPD_DrawRectangle(297, 133, 297 + text_w + 20, 133 + 16, COLOR_WHITE, 1); // 擦除旧温度
     EPD_ShowChinese(297, 133, (u8 *)temp_str, FONT_SIZE_16, COLOR_BLACK);
 
     text_w = GetStringWidth(hum_str, FONT_SIZE_16);
-    EPD_DrawRectangle(297,168,297+text_w + 20,168+16,COLOR_WHITE,1); // 擦除旧湿度
+    EPD_DrawRectangle(297, 168, 297 + text_w + 20, 168 + 16, COLOR_WHITE, 1); // 擦除旧湿度
     EPD_ShowChinese(297, 168, (u8 *)hum_str, FONT_SIZE_16, COLOR_BLACK);
-    
 }
