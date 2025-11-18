@@ -62,6 +62,7 @@ void UI_DrawIndexLoadingScreen(uint32_t currentProgress, uint32_t totalProgress,
 void UI_flushTime_LockScreen(const RtcTimeType_t *time);
 // void UI_flushTime_NovelListBox(const RtcTimeType_t *time);
 // void UI_flushTime_ReaderPage(const RtcTimeType_t *time);
+void UI_flushAHT20_LockScreen(float temperature, float humidity);
 
 
 void UI_Show(void);

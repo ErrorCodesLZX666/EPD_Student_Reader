@@ -32,5 +32,6 @@ extern uint8_t AHT20_data[7];
 
 void AHT20_Init(void); //AHT20初始化
 void AHT20_Detection_Start(void); //AHT20开始一次检测
+void AHT20_Get_Values(float *temperature, float *humidity); //获取温湿度值
 
 #endif

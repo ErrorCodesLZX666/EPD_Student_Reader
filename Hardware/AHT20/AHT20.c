@@ -16,6 +16,7 @@
 
 #include "AHT20.h"
 #include "gd32f4xx.h"
+#include "log.h"
 
 uint8_t AHT20_data[7] = {0};
 
@@ -224,4 +225,35 @@ void AHT20_Detection_Start(void)
     AHT20_data[5] = AHT20_I2C_Receive_Byte(ACK_OK);
     AHT20_data[6] = AHT20_I2C_Receive_Byte(ACK_NO);
     AHT20_I2C_Stop();
+
+    // 尝试输出日志中...
+    // 将字节遍历打印
+    for (uint8_t i = 0; i < 7; i++)
+    {
+        LOGD("AHT20_data[%d] = 0x%02X\r\n", i, AHT20_data[i]);
+    }
+    
+}
+
+
+/******************************************************************
+ * 函 数 名 称：AHT20_Get_Values
+ * 函 数 说 明：AHT20计算获取的温湿度
+ * 函 数 形 参：无
+ * 函 数 返 回：无
+ * 作       者：LZX
+ * 备       注：无
+******************************************************************/
+void AHT20_Get_Values(float *temperature, float *humidity)
+{
+    uint32_t temp;
+    uint32_t hum;
+
+    temp = ((AHT20_data[3] & 0x0F) << 16) | (AHT20_data[4] << 8) | (AHT20_data[5]);
+    hum = ((AHT20_data[1] << 16) | (AHT20_data[2] << 8) | (AHT20_data[3])) >> 4;
+    // *temperature = (temp * 200 * 10 / 1024.0 / 1024.0 - 500) / 10.0;
+    // *humidity = (hum * 100 * 10 / 1024 / 1024) / 10.0;
+
+    *temperature = (float)(temp  * 200.0  / 1048576.0 ) - 50.0;
+    *humidity = (float)(hum * 100.0 / 1048576.0);
 }

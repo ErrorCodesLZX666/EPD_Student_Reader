@@ -23,6 +23,7 @@
 #include "SYS_GUI.h"
 #include "SYS_KEY.h"
 #include "mcu_rtc.h"
+#include "AHT20.h"
 
 // 尝试定义任务句柄
 TaskHandle_t hTask_entries = NULL;
@@ -66,16 +67,27 @@ void task_loop_monitor(void *taskParams)
 {
     RtcTimeType_t time;
     uint8_t last_minute = 0;
+
+    // AHT20 温湿度检测变量
+    float temperature = 0;
+    float humidity = 0;
+
     // 尝试输出时间
     while (1)
     {
 
         RtcGetCurrentTimeStruct(&time);
+        AHT20_Detection_Start();
+        vTaskDelay(pdMS_TO_TICKS(100)); // 等待测量完成
+        AHT20_Get_Values(&temperature, &humidity);
 #if SHOW_TIME_TO_SCREEN
         LOGD("TimeMonitor Current time: 20%02d-%02d-%02d %02d:%02d:%02d\r\n",
              time.year, time.month, time.date,
              time.hour, time.minute, time.second);
         LOGD("----------------------------------------\r\n");
+        LOGD("AHT20Monitor Current Temperature: %.2f C, Humidity: %.2f %%\r\n", temperature, humidity);
+        LOGD("----------------------------------------\r\n");
+        
 #endif
         if (last_minute != time.minute)
         {
@@ -83,6 +95,7 @@ void task_loop_monitor(void *taskParams)
             // 每隔一段时间保存一次时间,这里使用min来确认保存
             // TODOS： 调用GUI中的时间更新函数，尝试判断不同的界面并且尝试更新时间
             UI_TimeUpdateToScreen(&time);
+            UI_AHT20UpdateToScreen(temperature, humidity);
             // 保存时间到Flash中
             save_sys_time(&time);
         }
@@ -156,6 +169,9 @@ void task_sys_init(void *taskParam)
     sd_fatfs_init(); // 初始化挂载SDCard磁盘
     LOGD("Mounting Disk [FLASH_SPI]...\r\n");
     spi_fatfs_init(); // 初始化挂载SPI_FLASH磁盘
+    // 初始化温湿度检测
+    LOGD("AHT20 INIT...\r\n");
+    AHT20_Init();
     LOGD("Loading RTC Clock ...\r\n");
     rtc_config(); // 初始化RTC时钟
     LOGD("Starting disk mountor progreess...\r\n");

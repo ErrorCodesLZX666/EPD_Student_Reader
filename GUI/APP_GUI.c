@@ -848,3 +848,18 @@ void UI_flushTime_LockScreen(const RtcTimeType_t *time)
 void UI_flushTime_NovelListBox(const RtcTimeType_t *time) {
     
 }
+
+void UI_flushAHT20_LockScreen(float temperature, float humidity) {
+    // 显示温度和湿度
+    char temp_str[16], hum_str[16];
+    snprintf(temp_str, sizeof(temp_str), "%0.1f ℃", temperature);
+    snprintf(hum_str, sizeof(hum_str), "%0.1f% %", humidity);
+    uint16_t text_w = GetStringWidth(temp_str, FONT_SIZE_16);
+    EPD_DrawRectangle(297,133,297+text_w + 20,133+16,COLOR_WHITE,1); // 擦除旧温度
+    EPD_ShowChinese(297, 133, (u8 *)temp_str, FONT_SIZE_16, COLOR_BLACK);
+
+    text_w = GetStringWidth(hum_str, FONT_SIZE_16);
+    EPD_DrawRectangle(297,168,297+text_w + 20,168+16,COLOR_WHITE,1); // 擦除旧湿度
+    EPD_ShowChinese(297, 168, (u8 *)hum_str, FONT_SIZE_16, COLOR_BLACK);
+    
+}

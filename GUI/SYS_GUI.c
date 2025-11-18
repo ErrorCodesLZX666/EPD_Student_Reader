@@ -358,3 +358,18 @@ void UI_TimeUpdateToScreen(const RtcTimeType_t *time)
         break;
     }
 }
+
+void UI_AHT20UpdateToScreen(float temperature, float humidity) {
+    // 使用Switch进行判断
+    switch (uiStatus)
+    {
+    case UI_STATE_LOCK:
+        // 等于锁屏界面
+        UI_flushAHT20_LockScreen(temperature, humidity);
+        UI_PartShow();
+        break;
+    default:
+        LOGE("Unhandled UI state for AHT20 update,no thing to do. UI_STATUS: %d\r\n", uiStatus);
+        break;
+    }
+}

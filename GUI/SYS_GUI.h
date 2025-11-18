@@ -37,6 +37,7 @@ void UI_Refresh(void);          // 根据当前状态重绘界面
 
 #include "SYS_GUI.h"
 void UI_TimeUpdateToScreen(const RtcTimeType_t* time); // 更新时间到屏幕
+void UI_AHT20UpdateToScreen(float temperature, float humidity); // 更新温湿度到屏幕
 
 
 void GUI_Event_Init(void);
