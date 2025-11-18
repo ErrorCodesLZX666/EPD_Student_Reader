@@ -582,85 +582,6 @@ uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
     // LOGD("显示余文本 =%s",page_end);
     return (uint32_t)(page_end - content);
 }
-// uint32_t UI_CalcReaderPageBytes(const char *content, uint8_t font_size)
-// {
-//     const char *p = content;
-//     u16 cur_y = 44;                        // 起始Y坐标（同绘制函数）
-//     const u16 line_height = font_size + 4; // 行高
-//     char linebuf[256];
-//     u32 line_no = 0;
-
-//     while (*p && (cur_y + line_height <= SCREEN_W - 20))
-//     {
-//         const char *start = p;
-//         int used = 0;
-
-//         // 检查换行符
-//         if (*p == '\r' || *p == '\n')
-//         {
-//             if (*p == '\r' && *(p + 1) == '\n')
-//                 p += 2;
-//             else
-//                 p += 1;
-//             cur_y += line_height;
-//             continue;
-//         }
-
-//         // 按字节计算一行
-//         while (*p)
-//         {
-//             if (*p == '\r' || *p == '\n')
-//                 break;
-
-//             uint8_t c = (uint8_t)*p;
-//             int char_len = (c >= 0x81 && c <= 0xFE) ? 2 : 1;
-
-//             // 复制到临时缓冲区（用于宽度计算）
-//             if (c >= 0x81 && c <= 0xFE)
-//             {
-//                 linebuf[used] = *p;
-//                 linebuf[used + 1] = *(p + 1);
-//                 linebuf[used + 2] = 0;
-//             }
-//             else
-//             {
-//                 linebuf[used] = *p;
-//                 linebuf[used + 1] = 0;
-//             }
-
-//             u16 tw = GetStringWidth(linebuf, font_size);
-//             if (tw > (SCREEN_H - 15))
-//             {
-//                 linebuf[used] = 0;
-//                 break;
-//             }
-
-//             used += char_len;
-//             p += char_len;
-//             if (used >= (int)(sizeof(linebuf) - 2))
-//                 break;
-//         }
-
-//         if (used == 0)
-//         {
-//             LOGD("Line %lu: used==0 at cur_y=%u, p points to 0x%02X\r\n",
-//                  (unsigned long)line_no, (unsigned)cur_y, (unsigned char)*p);
-//             break;
-//         }
-
-//         cur_y += line_height;
-//         line_no++;
-
-//         if (p == start)
-//         {
-//             LOGD("No progress in pointer advance; breaking to avoid infinite loop.\r\n");
-//             break;
-//         }
-//     }
-
-//     // 返回本页实际使用的字节数
-//     return (uint32_t)(p - content);
-// }
 
 #define LIST_START_X 10
 #define LIST_START_Y 60
@@ -680,8 +601,9 @@ void UI_DrawNovelListBox(const NovelListBox_t *box)
     EPD_ShowString(5, 5, (uint8_t *)box->time_str, 16, COLOR_BLACK);
 
     // 标题
-    EPD_ShowChinese(5, 25, (uint8_t *)"书架列表", 24, COLOR_BLACK);
-    EPD_ShowChinese(5 + 100, 25 + 12, (uint8_t *)"(按 ↑ ↓ 按键翻页，按OK键选择)", 12, COLOR_BLACK);
+    EPD_ShowPicture(5, 25, 24, 24, gImage_book_lib, COLOR_WHITE);
+    EPD_ShowChinese(33, 25, (uint8_t *)"书架列表", 24, COLOR_BLACK);
+    EPD_ShowChinese(33 + 100, 25 + 12, (uint8_t *)"(按 ↑ ↓ 按键翻页，按OK键选择)", 12, COLOR_BLACK);
 
     // 列表起始显示索引
     uint16_t start_index = 0;
@@ -704,11 +626,13 @@ void UI_DrawNovelListBox(const NovelListBox_t *box)
         {
             // 选中项背景高亮
             EPD_DrawRectangle(2, y - 2, SCREEN_H - 3, y + LIST_ITEM_H - 2, COLOR_BLACK, 1);
-            EPD_ShowChinese(8, y, (uint8_t *)box->novel_list[idx], 16, COLOR_WHITE);
+            EPD_ShowPicture(3, y, 16, 16, gImage_img_file_icon, COLOR_BLACK);
+            EPD_ShowChinese(23, y, (uint8_t *)box->novel_list[idx], 16, COLOR_WHITE);
         }
         else
         {
-            EPD_ShowChinese(8, y, (uint8_t *)box->novel_list[idx], 16, COLOR_BLACK);
+            EPD_ShowPicture(3, y, 16, 16, gImage_img_file_icon, COLOR_WHITE);
+            EPD_ShowChinese(23, y, (uint8_t *)box->novel_list[idx], 16, COLOR_BLACK);
         }
     }
 

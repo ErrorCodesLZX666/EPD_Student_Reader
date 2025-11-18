@@ -226,12 +226,12 @@ void AHT20_Detection_Start(void)
     AHT20_data[6] = AHT20_I2C_Receive_Byte(ACK_NO);
     AHT20_I2C_Stop();
 
-    // 尝试输出日志中...
-    // 将字节遍历打印
-    for (uint8_t i = 0; i < 7; i++)
-    {
-        LOGD("AHT20_data[%d] = 0x%02X\r\n", i, AHT20_data[i]);
-    }
+    // // 尝试输出日志中...
+    // // 将字节遍历打印
+    // for (uint8_t i = 0; i < 7; i++)
+    // {
+    //     LOGD("AHT20_data[%d] = 0x%02X\r\n", i, AHT20_data[i]);
+    // }
     
 }
 
