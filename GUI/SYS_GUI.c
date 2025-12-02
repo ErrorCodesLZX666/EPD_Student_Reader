@@ -322,6 +322,7 @@ void UI_Refresh(void)
             current_page_content_bytes = UI_CalcReaderPageBytes(novelContent, FONT_SIZE_16);
             // novelIndex.current_bytes += current_page_content_bytes;
             myfree(SRAMIN, novelContent);
+		
         }
         break;
     }
@@ -363,7 +364,7 @@ void UI_TimeUpdateToScreen(const RtcTimeType_t *time)
     {
     case UI_STATE_LOCK:
         // 等于锁屏界面
-        UI_flushTime_LockScreen(time);
+        UI_flushTime_LockScreen(time); 
         UI_PartShow();
         break;
     case UI_STATE_LIST:

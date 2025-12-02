@@ -86,15 +86,13 @@ void usart0_send_data(uint8_t *data, uint8_t len){
 void usart0_send_string(uint8_t *str) {
 	while(str && *str){
 		usart0_send_byte((uint8_t)(*str));
-		str++;
+    str++;
 	}
 }
-
-
 // 串口打印功能实现
 int fputc(int ch, FILE *f) {
     usart0_send_byte((uint8_t)ch);
-	// vTaskDelay();
+	 // vTaskDelay(pdMS_TO_TICKS(50));
     return ch;
 }
 
@@ -107,23 +105,38 @@ static uint8_t g_recv_buff[USART_RECEIVE_LENGTH];   // 接收缓冲区
 static int g_recv_length = 0;
 
 // 定义中断中要使用调用的函数
+//void USART0_IRQHandler(void) {
+//    if ((usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)) == SET) {
+//		usart_interrupt_flag_clear(USART0, USART_INT_FLAG_RBNE);
+//        uint16_t value = usart_data_receive(USART0);
+//        g_recv_buff[g_recv_length] = value;		
+//        g_recv_length++;
+//    }
+//    if (usart_interrupt_flag_get(USART0, USART_INT_FLAG_IDLE) == SET) {
+//        //读取缓冲区,清空缓冲区
+//        usart_data_receive(USART0);
+//        g_recv_buff[g_recv_length] = '\0';
+
+//        // TODO: g_recv_buff为接收的数据，g_recv_length为接收的长度
+//        //printf("%s", g_recv_buff);
+//		// 这里就调用回调函数
+//		usart0_on_recive(g_recv_buff,g_recv_length);
+
+//        g_recv_length = 0;
+//    }
+//}
+
 void USART0_IRQHandler(void) {
-    if ((usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)) == SET) {
-		usart_interrupt_flag_clear(USART0, USART_INT_FLAG_RBNE);
+    if (usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE) == SET) {
+        usart_interrupt_flag_clear(USART0, USART_INT_FLAG_RBNE);
         uint16_t value = usart_data_receive(USART0);
-        g_recv_buff[g_recv_length] = value;		
+        // 处理接收到的数据
+        g_recv_buff[g_recv_length] = value;
         g_recv_length++;
-    }
-    if (usart_interrupt_flag_get(USART0, USART_INT_FLAG_IDLE) == SET) {
-        //读取缓冲区,清空缓冲区
-        usart_data_receive(USART0);
-        g_recv_buff[g_recv_length] = '\0';
-
-        // TODO: g_recv_buff为接收的数据，g_recv_length为接收的长度
-        //printf("%s", g_recv_buff);
-		// 这里就调用回调函数
-		usart0_on_recive(g_recv_buff,g_recv_length);
-
-        g_recv_length = 0;
+        // 处理数据缓冲区
+        if (g_recv_length >= USART_RECEIVE_LENGTH - 1) {
+            g_recv_buff[g_recv_length] = '\0';  // Null terminate
+            g_recv_length = 0;
+        }
     }
 }

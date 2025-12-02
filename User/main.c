@@ -144,11 +144,10 @@ void task_font_config()
     EPD_GPIOInit(); // 加载墨水屏驱动
 
     // 加载开机界面
-
     // 初始化项目级别的GUI
     GUI_key_config();
     SYSGUI_Entries(); // 启动GUI任务
-    xTaskCreate(Key_Task, "Key_Task", 2048, NULL, 3, NULL);
+    xTaskCreate(Key_Task, "Key_Task", 4096, NULL, 3, NULL);
 
     while (1)
         ;
@@ -157,7 +156,11 @@ void task_font_config()
 // 任务系统初始化
 void task_sys_init(void *taskParam)
 {
-    BaseType_t ret;
+	LOGD("current is loading printf ...\r\n");
+	// vTaskDelay(pdMS_TO_TICKS(2000));
+	LOGD("LOGD loading ... \r\n");
+ 
+	BaseType_t ret;
     LOGD("SYS_PERH_INIT...\r\n");
     LOGD("SPI_INIT...\r\n");
     spi_config(); // 初始化SPI硬件通信
@@ -175,14 +178,14 @@ void task_sys_init(void *taskParam)
     LOGD("Loading RTC Clock ...\r\n");
     rtc_config(); // 初始化RTC时钟
     LOGD("Starting disk mountor progreess...\r\n");
-    xTaskCreate(task_disk_montor, "task_disk_montor", 1024, NULL, 1, &hTask_disk_montor_progress);
+    xTaskCreate(task_disk_montor, "task_disk_montor", 4096, NULL, 1, &hTask_disk_montor_progress);
     LOGD("Starting FONT init progress ...\r\n");
     // 启动磁盘监听
     printf("[Staring done]\r\n");
     LOGW("Trying to loading GUI ...\r\n");
-    ret = xTaskCreate(task_font_config, "task_font_config", 1024, NULL, 1, &hTask_task_font_config);
-    // ret = xTaskCreate(task_force_update_font,"task_force_update_font",1024,NULL,1,NULL);
-    ret = xTaskCreate(task_loop_monitor, "task_loop_monitor", 1024, NULL, 1, NULL);
+    ret = xTaskCreate(task_font_config, "task_font_config", 4096, NULL, 1, &hTask_task_font_config);
+    // ret = xTaskCreate(task_force_update_font,"task_force_update_font",4096,NULL,1,NULL);
+    ret = xTaskCreate(task_loop_monitor, "task_loop_monitor", 4096, NULL, 1, NULL);
     // 尝试启动LVGL
     while (1)
         ;
@@ -191,13 +194,20 @@ void task_sys_init(void *taskParam)
 // 任务入口点
 void task_entries(void *taskParm)
 {
+	  printf("start task running ...\r\n");
+	
     BaseType_t ret;
+	
+	
     // 尝试启用其他的任务
-    ret = xTaskCreate(task_sys_init, "task_sys_init", 1024, NULL, 1, &hTask_sys_init);
+    ret = xTaskCreate(task_sys_init, "task_sys_init", 8192, NULL, 1, &hTask_sys_init);
+	printf("start task running  666  ...\r\n");
     if (ret != pdPASS)
         LOGE("Task start Failed ... \r\n");
+		printf("start task running finished  ...\r\n");
     // 最终尝试结束本任务
     vTaskDelete(NULL);
+		//while(1) ;
 }
 
 int main(void)
@@ -205,23 +215,47 @@ int main(void)
     // systick_config();
     usart0_init();
     log_sema_init(); // 创建日志互斥体
-    printf("------------- SYSTEM START UP -------------\r\n");
-    printf("BOOTLOADER Loading successfull ...\r\n");
-    printf("SYSTEMOS: PDE Portal Student Reader \r\n");
-    printf("HARDWARE VER: Beta 0.1");
-    printf("Copyright LeiZhiXiang (C) All rights recived...\r\n");
-    printf("-------------------------------------------\r\n");
-    // vTaskDelay(pdMS_TO_TICKS(500));
+//    printf("------------- SYSTEM START UP -------------\r\n");
+//    printf("BOOTLOADER Loading successfull ...\r\n");
+//    printf("SYSTEMOS: PDE Portal Student Reader \r\n");
+//    printf("HARDWARE VER: Beta 0.1");
+//    printf("Copyright LeiZhiXiang (C) All rights recived...\r\n");
+//    printf("-------------------------------------------\r\n");
+
     //  执行任务操作
-    xTaskCreate(task_entries, "task_entries", 1024 * 10, NULL, 1, &hTask_entries);
-    // 开启任务调度功能
+    xTaskCreate(task_sys_init, "task_entries", 1024 * 10, NULL, 1, &hTask_entries);
+
+	    // 开启任务调度功能
     vTaskStartScheduler();
-    while (1)
-        ;
+        while (1) {
+        // 在主循环中添加一些逻辑，避免死循环
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
 
 void usart0_on_recive(uint8_t *datas, uint8_t len)
 {
     // TODOS
     printf("%s", datas);
+}
+
+
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    /* 输出哪个任务溢出了 */
+    printf(">>> Stack Overflow! Task name: %s <<<\r\n", pcTaskName);
+
+    /* 死循环，防止继续运行破坏系统 */
+    taskDISABLE_INTERRUPTS();
+    for(;;);
+}
+
+
+void vApplicationMallocFailedHook(void)
+{
+    printf(">>> Malloc Failed! FreeRTOS heap exhausted <<<\r\n");
+
+    taskDISABLE_INTERRUPTS();
+    for(;;);
 }

@@ -180,7 +180,9 @@ void sd_fatfs_init(void)
     disk_sd.free_kb = 0;
 
     // 初始化 SD 底层（该函数由你的 sdcard 驱动提供）
+	LOGD("sd_error_enum ");
     sd_error_enum err = sd_io_init();
+	LOGD("done  ");
     if (err != SD_OK)
     {
         LOGE("SDIO init failed... ERROR_CODE = %d\r\n", err);
