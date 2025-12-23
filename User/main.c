@@ -87,7 +87,7 @@ void task_loop_monitor(void *taskParams)
         LOGD("----------------------------------------\r\n");
         LOGD("AHT20Monitor Current Temperature: %.2f C, Humidity: %.2f %%\r\n", temperature, humidity);
         LOGD("----------------------------------------\r\n");
-        
+
 #endif
         if (last_minute != time.minute)
         {
@@ -174,6 +174,8 @@ void task_sys_init(void *taskParam)
     spi_fatfs_init(); // 初始化挂载SPI_FLASH磁盘
     // 初始化温湿度检测
     LOGD("AHT20 INIT...\r\n");
+    // vTaskDelay(pdMS_TO_TICKS(1000));
+    LOGD("AHT20 INIT..asdfadfasf.\r\n");
     AHT20_Init();
     LOGD("Loading RTC Clock ...\r\n");
     rtc_config(); // 初始化RTC时钟
@@ -194,20 +196,37 @@ void task_sys_init(void *taskParam)
 // 任务入口点
 void task_entries(void *taskParm)
 {
+<<<<<<< HEAD
+
+=======
 	  printf("start task running ...\r\n");
 	
+>>>>>>> EPD_Student_Reader/master
     BaseType_t ret;
 	
 	
     // 尝试启用其他的任务
     ret = xTaskCreate(task_sys_init, "task_sys_init", 8192, NULL, 1, &hTask_sys_init);
+<<<<<<< HEAD
+
+=======
 	printf("start task running  666  ...\r\n");
+>>>>>>> EPD_Student_Reader/master
     if (ret != pdPASS)
         LOGE("Task start Failed ... \r\n");
 		printf("start task running finished  ...\r\n");
     // 最终尝试结束本任务
     vTaskDelete(NULL);
 		//while(1) ;
+}
+
+void testDemo()
+{
+    while (1)
+    {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        LOGD("test");
+    }
 }
 
 int main(void)
@@ -223,6 +242,14 @@ int main(void)
 //    printf("-------------------------------------------\r\n");
 
     //  执行任务操作
+<<<<<<< HEAD
+    xTaskCreate(task_entries, "task_entries", 1024 * 10, NULL, 1, &hTask_entries);
+    // xTaskCreate(testDemo, "testDemo", 1024, NULL, 1, NULL);
+    //  开启任务调度功能
+    vTaskStartScheduler();
+    while (1)
+        ; // 不阻塞调度;
+=======
     xTaskCreate(task_sys_init, "task_entries", 1024 * 10, NULL, 1, &hTask_entries);
 
 	    // 开启任务调度功能
@@ -231,11 +258,15 @@ int main(void)
         // 在主循环中添加一些逻辑，避免死循环
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+>>>>>>> EPD_Student_Reader/master
 }
 
 void usart0_on_recive(uint8_t *datas, uint8_t len)
 {
     // TODOS
+<<<<<<< HEAD
+    // printf("%s", datas);
+=======
     printf("%s", datas);
 }
 
@@ -258,4 +289,5 @@ void vApplicationMallocFailedHook(void)
 
     taskDISABLE_INTERRUPTS();
     for(;;);
+>>>>>>> EPD_Student_Reader/master
 }

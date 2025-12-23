@@ -185,7 +185,16 @@ void sd_fatfs_init(void)
 	LOGD("done  ");
     if (err != SD_OK)
     {
-        LOGE("SDIO init failed... ERROR_CODE = %d\r\n", err);
+        while (err != SD_OK)
+        {
+            err = sd_io_init();
+        }
+        if (err != SD_OK)
+        {
+            LOGE("SDIO init failed with 2 times try ... ERROR_CODE = %d\r\n", err);
+        }
+        
+        
         // SD ≥ı ºªØ ß∞‹
         return;
     }

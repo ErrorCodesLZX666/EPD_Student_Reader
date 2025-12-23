@@ -113,7 +113,7 @@ static void system_clock_200m_8m_hxtal(void);
 #elif defined (__SYSTEM_CLOCK_200M_PLL_25M_HXTAL)
 uint32_t SystemCoreClock = __SYSTEM_CLOCK_200M_PLL_25M_HXTAL;
 static void system_clock_200m_25m_hxtal(void);
-#elif defined (__SYSTEM_CLOCK_240M_PLL_IRC16M)
+#elif defined (__SYSTEM_CLOCK_240M_PLL_IRC16M)							
 uint32_t SystemCoreClock = __SYSTEM_CLOCK_240M_PLL_IRC16M;
 static void system_clock_240m_irc16m(void);
 #elif defined (__SYSTEM_CLOCK_240M_PLL_8M_HXTAL)

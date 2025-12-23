@@ -92,7 +92,11 @@ void usart0_send_string(uint8_t *str) {
 // 串口打印功能实现
 int fputc(int ch, FILE *f) {
     usart0_send_byte((uint8_t)ch);
+<<<<<<< HEAD
+	// delay_1ms(2);
+=======
 	 // vTaskDelay(pdMS_TO_TICKS(50));
+>>>>>>> EPD_Student_Reader/master
     return ch;
 }
 

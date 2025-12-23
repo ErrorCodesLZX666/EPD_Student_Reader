@@ -164,6 +164,7 @@ static void dma_receive_config(uint32_t *dstbuf, uint32_t bufsize);
     \param[out] none
     \retval     sd_error_enum
 */
+#include  "log.h"
 sd_error_enum sd_init(void)
 {
     sd_error_enum status = SD_OK;
@@ -175,14 +176,18 @@ sd_error_enum sd_init(void)
     /* configure the clock and work voltage */
     status = sd_power_on();
     if(SD_OK != status) {
+        LOGD("sd_power_on() error result = %d\r\n",status);
         return status;
     }
+    
 
     /* initialize the card and get CID and CSD of the card */
     status = sd_card_init();
     if(SD_OK != status) {
+        LOGD("sd_card_init() error result = %d\r\n",status);
         return status;
     }
+    
 
     /* configure the SDIO peripheral */
     sdio_clock_config(SDIO_SDIOCLKEDGE_RISING, SDIO_CLOCKBYPASS_DISABLE, SDIO_CLOCKPWRSAVE_DISABLE, SD_CLK_DIV_TRANS);
@@ -198,6 +203,7 @@ sd_error_enum sd_init(void)
     \param[out] none
     \retval     sd_error_enum
 */
+#include "log.h"
 sd_error_enum sd_card_init(void)
 {
     sd_error_enum status = SD_OK;
@@ -216,6 +222,7 @@ sd_error_enum sd_card_init(void)
         sdio_csm_enable();
         /* check if some error occurs */
         status = r2_error_check();
+        LOGD("r2_error_check() result = %d\r\n",status);
         if(SD_OK != status) {
             return status;
         }
@@ -236,6 +243,7 @@ sd_error_enum sd_card_init(void)
         sdio_csm_enable();
         /* check if some error occurs */
         status = r6_error_check(SD_CMD_SEND_RELATIVE_ADDR, &temp_rca);
+        LOGD("r6_error_check() result = %d\r\n",status);
         if(SD_OK != status) {
             return status;
         }
@@ -251,6 +259,7 @@ sd_error_enum sd_card_init(void)
         sdio_csm_enable();
         /* check if some error occurs */
         status = r2_error_check();
+        
         if(SD_OK != status) {
             return status;
         }
@@ -2467,39 +2476,40 @@ static void dma_receive_config(uint32_t *dstbuf, uint32_t bufsize)
 
 
 
-
-
-
-
-
-
 sd_error_enum sd_io_init(void)
 {
     sd_error_enum status = SD_OK;
     uint32_t cardstate = 0;
     status = sd_init();
+    
     if(SD_OK == status) {
         status = sd_card_information_get(&sd_cardinfo);
     }
+    LOGD("sd_card_information_get() result = %d\r\n",status);    
+
     if(SD_OK == status) {
         status = sd_card_select_deselect(sd_cardinfo.card_rca);
     }
+    LOGD("sd_card_select_deselect() result = %d\r\n",status);  
     status = sd_cardstatus_get(&cardstate);
     if(cardstate & 0x02000000) {
         printf("\r\n the card is locked!");
         while(1) {
         }
     }
+    LOGD("sd_cardstatus_get() result = %d\r\n",status);
     if((SD_OK == status) && (!(cardstate & 0x02000000))) {
         /* set bus mode */
         status = sd_bus_mode_config(SDIO_BUSMODE_4BIT);
        // status = sd_bus_mode_config(SDIO_BUSMODE_1BIT);
     }
+    LOGD("sd_bus_mode_config() result = %d\r\n",status);
     if(SD_OK == status) {
         /* set data transfer mode */
         //status = sd_transfer_mode_config(SD_DMA_MODE);
        status = sd_transfer_mode_config(SD_POLLING_MODE);
     }
+    LOGD("sd_transfer_mode_config() result = %d\r\n",status);
     return status;
 }
 
